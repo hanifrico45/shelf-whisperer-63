@@ -98,7 +98,7 @@ export async function fetchBooks({ search, categoryId, status, page, pageSize }:
     query = query.or(`title.ilike.${term},author.ilike.${term},isbn.ilike.${term}`);
   }
   if (categoryId && categoryId !== "all") query = query.eq("category_id", categoryId);
-  if (status && status !== "all") query = query.eq("status", status);
+  if (status && status !== "all") query = query.eq("status", status as BookStatus);
 
   const { data, error, count } = await query.returns<BookRow[]>();
   if (error) throw error;
