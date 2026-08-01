@@ -251,6 +251,164 @@ export type Database = {
         }
         Relationships: []
       }
+      receipts: {
+        Row: {
+          created_at: string
+          id: string
+          print_count: number
+          receipt_number: string
+          sale_id: string
+          snapshot: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          print_count?: number
+          receipt_number: string
+          sale_id: string
+          snapshot?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          print_count?: number
+          receipt_number?: string
+          sale_id?: string
+          snapshot?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_items: {
+        Row: {
+          author: string | null
+          book_id: string | null
+          created_at: string
+          discount_amount: number
+          id: string
+          isbn: string | null
+          line_total: number
+          quantity: number
+          sale_id: string
+          title: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          author?: string | null
+          book_id?: string | null
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          isbn?: string | null
+          line_total?: number
+          quantity?: number
+          sale_id: string
+          title: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          author?: string | null
+          book_id?: string | null
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          isbn?: string | null
+          line_total?: number
+          quantity?: number
+          sale_id?: string
+          title?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          amount_paid: number
+          cashier_id: string | null
+          change_due: number
+          created_at: string
+          customer_name: string | null
+          discount_amount: number
+          discount_type: string
+          discount_value: number
+          id: string
+          notes: string | null
+          sale_number: string
+          status: Database["public"]["Enums"]["sale_status"]
+          subtotal: number
+          tax_amount: number
+          tax_rate: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          cashier_id?: string | null
+          change_due?: number
+          created_at?: string
+          customer_name?: string | null
+          discount_amount?: number
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          notes?: string | null
+          sale_number: string
+          status?: Database["public"]["Enums"]["sale_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          cashier_id?: string | null
+          change_due?: number
+          created_at?: string
+          customer_name?: string | null
+          discount_amount?: number
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          notes?: string | null
+          sale_number?: string
+          status?: Database["public"]["Enums"]["sale_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -284,6 +442,44 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          reference: string | null
+          sale_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+          sale_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+          sale_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -313,6 +509,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      checkout_sale: {
+        Args: {
+          _customer_name: string
+          _discount_type: string
+          _discount_value: number
+          _items: Json
+          _notes: string
+          _payments: Json
+          _tax_rate: number
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -324,6 +532,8 @@ export type Database = {
     Enums: {
       app_role: "owner" | "manager" | "cashier" | "inventory_staff"
       book_status: "active" | "archived" | "out_of_stock" | "discontinued"
+      payment_method: "cash" | "card" | "transfer"
+      sale_status: "completed" | "refunded" | "void"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -453,6 +663,8 @@ export const Constants = {
     Enums: {
       app_role: ["owner", "manager", "cashier", "inventory_staff"],
       book_status: ["active", "archived", "out_of_stock", "discontinued"],
+      payment_method: ["cash", "card", "transfer"],
+      sale_status: ["completed", "refunded", "void"],
     },
   },
 } as const
