@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { currency, fetchAllBooksLight, fetchAuditLogs } from "@/lib/inventory";
+import { fetchSales } from "@/lib/pos";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -55,6 +56,10 @@ function DashboardPage() {
 
   const booksQuery = useQuery({ queryKey: ["books-light"], queryFn: fetchAllBooksLight });
   const auditQuery = useQuery({ queryKey: ["audit"], queryFn: () => fetchAuditLogs(8) });
+  const salesQuery = useQuery({
+    queryKey: ["dashboard-sales"],
+    queryFn: () => fetchSales("", 0, 100),
+  });
 
   useEffect(() => {
     const channel = supabase
@@ -67,6 +72,10 @@ function DashboardPage() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "audit_logs" }, () => {
         queryClient.invalidateQueries({ queryKey: ["audit"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "sales" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dashboard-sales"] });
+        queryClient.invalidateQueries({ queryKey: ["books-light"] });
       })
       .subscribe();
     return () => {
@@ -91,7 +100,14 @@ function DashboardPage() {
   ).length;
   const outOfStock = books.filter((b) => (b.inventory?.quantity ?? 0) === 0).length;
 
+  const sales = salesQuery.data?.rows ?? [];
+  const today = new Date().toDateString();
+  const todaySales = sales.filter((s) => new Date(s.created_at).toDateString() === today);
+  const todayRevenue = todaySales.reduce((sum, s) => sum + Number(s.total), 0);
+
   const cards = [
+    { label: "Sales Today", value: todaySales.length.toString(), icon: Receipt, hint: "completed checkouts" },
+    { label: "Revenue Today", value: currency(todayRevenue), icon: Wallet, hint: "gross takings" },
     { label: "Total Books", value: totalCopies.toLocaleString(), icon: BookCopy, hint: "copies in stock" },
     { label: "Different Titles", value: books.length.toLocaleString(), icon: Library, hint: "unique SKUs" },
     { label: "Inventory Value", value: currency(inventoryValue), icon: Wallet, hint: "at purchase cost" },

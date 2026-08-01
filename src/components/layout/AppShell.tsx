@@ -1,6 +1,17 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, LayoutDashboard, Library, History, Users, Moon, Sun, LogOut } from "lucide-react";
+import {
+  BookOpen,
+  LayoutDashboard,
+  Library,
+  History,
+  Users,
+  Moon,
+  Sun,
+  LogOut,
+  ScanLine,
+  ReceiptText,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import {
@@ -23,10 +34,13 @@ import { useTheme } from "@/lib/theme";
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Point of Sale", url: "/pos", icon: ScanLine },
   { title: "Books", url: "/books", icon: Library },
+  { title: "Sales", url: "/sales", icon: ReceiptText },
   { title: "Activity", url: "/activity", icon: History },
   { title: "Team", url: "/team", icon: Users },
 ] as const;
+
 
 function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
