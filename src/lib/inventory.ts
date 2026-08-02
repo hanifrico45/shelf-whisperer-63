@@ -78,6 +78,35 @@ export type BookFormValues = z.infer<typeof bookSchema>;
 
 const nullable = (value?: string) => (value && value.length > 0 ? value : null);
 
+/** Turns Postgres / network failures into copy a bookseller can act on. */
+export function friendlyDbError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  if (typeof navigator !== "undefined" && !navigator.onLine)
+    return "You're offline — reconnect to save changes.";
+  if (/duplicate key|unique constraint/i.test(message))
+    return "A book with these details already exists.";
+  if (/row-level security|permission denied|not authorized/i.test(message))
+    return "You don't have permission to do that.";
+  if (/violates foreign key/i.test(message))
+    return "This record is linked to other data and can't be changed that way.";
+  if (/jwt|session|not authenticated/i.test(message))
+    return "Your session expired. Please sign in again.";
+  if (/failed to fetch|network/i.test(message))
+    return "Couldn't reach the database. Check your connection and retry.";
+  return message || "Something went wrong. Please try again.";
+}
+
+/** Blocks two books sharing the same ISBN. */
+async function assertIsbnAvailable(isbn: string | null, excludeId?: string) {
+  if (!isbn) return;
+  let query = supabase.from("books").select("id").eq("isbn", isbn).limit(1);
+  if (excludeId) query = query.neq("id", excludeId);
+  const { data, error } = await query;
+  if (error) throw new Error(friendlyDbError(error));
+  if (data && data.length > 0) throw new Error(`A book with ISBN ${isbn} already exists.`);
+}
+
+
 export interface BooksQuery {
   search: string;
   categoryId: string;
