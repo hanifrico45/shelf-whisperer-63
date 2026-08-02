@@ -193,6 +193,8 @@ export async function fetchAuditLogs(limit = 8) {
 
 export async function createBook(values: BookFormValues) {
   const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) throw new Error("Your session expired. Please sign in again.");
+  await assertIsbnAvailable(nullable(values.isbn));
   const { data, error } = await supabase
     .from("books")
     .insert({
@@ -207,11 +209,11 @@ export async function createBook(values: BookFormValues) {
       purchase_cost: values.purchase_cost,
       selling_price: values.selling_price,
       status: values.status,
-      created_by: userData.user?.id ?? null,
+      created_by: userData.user.id,
     })
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) throw new Error(friendlyDbError(error));
 
   const { error: invError } = await supabase.from("inventory").insert({
     book_id: data.id,
@@ -219,13 +221,14 @@ export async function createBook(values: BookFormValues) {
     minimum_stock_level: values.minimum_stock_level,
     shelf_location: nullable(values.shelf_location),
   });
-  if (invError) throw invError;
+  if (invError) throw new Error(friendlyDbError(invError));
 
   await logAudit("Book Added", data.id, values.title, { quantity: values.quantity });
   return data.id;
 }
 
 export async function updateBook(book: BookRow, values: BookFormValues) {
+  await assertIsbnAvailable(nullable(values.isbn), book.id);
   const { error } = await supabase
     .from("books")
     .update({
@@ -242,7 +245,7 @@ export async function updateBook(book: BookRow, values: BookFormValues) {
       status: values.status,
     })
     .eq("id", book.id);
-  if (error) throw error;
+  if (error) throw new Error(friendlyDbError(error));
 
   const inventoryPayload = {
     book_id: book.id,
@@ -253,21 +256,25 @@ export async function updateBook(book: BookRow, values: BookFormValues) {
   const { error: invError } = book.inventory
     ? await supabase.from("inventory").update(inventoryPayload).eq("book_id", book.id)
     : await supabase.from("inventory").insert(inventoryPayload);
-  if (invError) throw invError;
+  if (invError) throw new Error(friendlyDbError(invError));
 
-  await logAudit("Book Updated", book.id, values.title);
+  await logAudit("Book Updated", book.id, values.title, {
+    quantity: values.quantity,
+    previous_quantity: book.inventory?.quantity ?? 0,
+  });
 }
 
 export async function archiveBook(book: BookRow) {
   const { error } = await supabase.from("books").update({ status: "archived" }).eq("id", book.id);
-  if (error) throw error;
+  if (error) throw new Error(friendlyDbError(error));
   await logAudit("Book Archived", book.id, book.title);
 }
 
 export async function deleteBook(book: BookRow) {
   const { error } = await supabase.from("books").delete().eq("id", book.id);
-  if (error) throw error;
+  if (error) throw new Error(friendlyDbError(error));
   await logAudit("Book Deleted", book.id, book.title);
+
 }
 
 export async function uploadCover(file: File) {
