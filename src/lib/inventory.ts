@@ -78,6 +78,35 @@ export type BookFormValues = z.infer<typeof bookSchema>;
 
 const nullable = (value?: string) => (value && value.length > 0 ? value : null);
 
+/** Turns Postgres / network failures into copy a bookseller can act on. */
+export function friendlyDbError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  if (typeof navigator !== "undefined" && !navigator.onLine)
+    return "You're offline — reconnect to save changes.";
+  if (/duplicate key|unique constraint/i.test(message))
+    return "A book with these details already exists.";
+  if (/row-level security|permission denied|not authorized/i.test(message))
+    return "You don't have permission to do that.";
+  if (/violates foreign key/i.test(message))
+    return "This record is linked to other data and can't be changed that way.";
+  if (/jwt|session|not authenticated/i.test(message))
+    return "Your session expired. Please sign in again.";
+  if (/failed to fetch|network/i.test(message))
+    return "Couldn't reach the database. Check your connection and retry.";
+  return message || "Something went wrong. Please try again.";
+}
+
+/** Blocks two books sharing the same ISBN. */
+async function assertIsbnAvailable(isbn: string | null, excludeId?: string) {
+  if (!isbn) return;
+  let query = supabase.from("books").select("id").eq("isbn", isbn).limit(1);
+  if (excludeId) query = query.neq("id", excludeId);
+  const { data, error } = await query;
+  if (error) throw new Error(friendlyDbError(error));
+  if (data && data.length > 0) throw new Error(`A book with ISBN ${isbn} already exists.`);
+}
+
+
 export interface BooksQuery {
   search: string;
   categoryId: string;
@@ -164,6 +193,8 @@ export async function fetchAuditLogs(limit = 8) {
 
 export async function createBook(values: BookFormValues) {
   const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) throw new Error("Your session expired. Please sign in again.");
+  await assertIsbnAvailable(nullable(values.isbn));
   const { data, error } = await supabase
     .from("books")
     .insert({
@@ -178,11 +209,11 @@ export async function createBook(values: BookFormValues) {
       purchase_cost: values.purchase_cost,
       selling_price: values.selling_price,
       status: values.status,
-      created_by: userData.user?.id ?? null,
+      created_by: userData.user.id,
     })
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) throw new Error(friendlyDbError(error));
 
   const { error: invError } = await supabase.from("inventory").insert({
     book_id: data.id,
@@ -190,13 +221,14 @@ export async function createBook(values: BookFormValues) {
     minimum_stock_level: values.minimum_stock_level,
     shelf_location: nullable(values.shelf_location),
   });
-  if (invError) throw invError;
+  if (invError) throw new Error(friendlyDbError(invError));
 
   await logAudit("Book Added", data.id, values.title, { quantity: values.quantity });
   return data.id;
 }
 
 export async function updateBook(book: BookRow, values: BookFormValues) {
+  await assertIsbnAvailable(nullable(values.isbn), book.id);
   const { error } = await supabase
     .from("books")
     .update({
@@ -213,7 +245,7 @@ export async function updateBook(book: BookRow, values: BookFormValues) {
       status: values.status,
     })
     .eq("id", book.id);
-  if (error) throw error;
+  if (error) throw new Error(friendlyDbError(error));
 
   const inventoryPayload = {
     book_id: book.id,
@@ -224,21 +256,25 @@ export async function updateBook(book: BookRow, values: BookFormValues) {
   const { error: invError } = book.inventory
     ? await supabase.from("inventory").update(inventoryPayload).eq("book_id", book.id)
     : await supabase.from("inventory").insert(inventoryPayload);
-  if (invError) throw invError;
+  if (invError) throw new Error(friendlyDbError(invError));
 
-  await logAudit("Book Updated", book.id, values.title);
+  await logAudit("Book Updated", book.id, values.title, {
+    quantity: values.quantity,
+    previous_quantity: book.inventory?.quantity ?? 0,
+  });
 }
 
 export async function archiveBook(book: BookRow) {
   const { error } = await supabase.from("books").update({ status: "archived" }).eq("id", book.id);
-  if (error) throw error;
+  if (error) throw new Error(friendlyDbError(error));
   await logAudit("Book Archived", book.id, book.title);
 }
 
 export async function deleteBook(book: BookRow) {
   const { error } = await supabase.from("books").delete().eq("id", book.id);
-  if (error) throw error;
+  if (error) throw new Error(friendlyDbError(error));
   await logAudit("Book Deleted", book.id, book.title);
+
 }
 
 export async function uploadCover(file: File) {

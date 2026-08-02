@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { logAuthEvent } from "@/lib/auth";
+
 import { useTheme } from "@/lib/theme";
 
 const items = [
@@ -100,11 +102,13 @@ export function AppShell({
   const queryClient = useQueryClient();
 
   async function handleSignOut() {
+    await logAuthEvent("Logout");
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
+
 
   return (
     <SidebarProvider>
