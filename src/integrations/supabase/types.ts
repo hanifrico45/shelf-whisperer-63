@@ -153,6 +153,42 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           book_id: string
@@ -190,6 +226,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -250,6 +322,110 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      purchase_order_items: {
+        Row: {
+          book_id: string | null
+          created_at: string
+          id: string
+          isbn: string | null
+          line_total: number
+          purchase_order_id: string
+          quantity: number
+          quantity_received: number
+          title: string
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          book_id?: string | null
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          line_total?: number
+          purchase_order_id: string
+          quantity?: number
+          quantity_received?: number
+          title: string
+          unit_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string | null
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          line_total?: number
+          purchase_order_id?: string
+          quantity?: number
+          quantity_received?: number
+          title?: string
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expected_date: string | null
+          id: string
+          notes: string | null
+          order_number: string
+          status: Database["public"]["Enums"]["purchase_order_status"]
+          supplier_id: string | null
+          total_cost: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expected_date?: string | null
+          id?: string
+          notes?: string | null
+          order_number: string
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          supplier_id?: string | null
+          total_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expected_date?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          supplier_id?: string | null
+          total_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       receipts: {
         Row: {
@@ -533,6 +709,12 @@ export type Database = {
       app_role: "owner" | "manager" | "cashier" | "inventory_staff"
       book_status: "active" | "archived" | "out_of_stock" | "discontinued"
       payment_method: "cash" | "card" | "transfer"
+      purchase_order_status:
+        | "draft"
+        | "ordered"
+        | "partially_received"
+        | "received"
+        | "cancelled"
       sale_status: "completed" | "refunded" | "void"
     }
     CompositeTypes: {
@@ -664,6 +846,13 @@ export const Constants = {
       app_role: ["owner", "manager", "cashier", "inventory_staff"],
       book_status: ["active", "archived", "out_of_stock", "discontinued"],
       payment_method: ["cash", "card", "transfer"],
+      purchase_order_status: [
+        "draft",
+        "ordered",
+        "partially_received",
+        "received",
+        "cancelled",
+      ],
       sale_status: ["completed", "refunded", "void"],
     },
   },
