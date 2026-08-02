@@ -100,11 +100,13 @@ export function AppShell({
   const queryClient = useQueryClient();
 
   async function handleSignOut() {
+    await logAuthEvent("Logout");
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
+
 
   return (
     <SidebarProvider>
