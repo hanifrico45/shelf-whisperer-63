@@ -139,7 +139,7 @@ function AuthPage() {
     }
   }
 
-  }
+
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
