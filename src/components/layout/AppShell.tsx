@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { logAuthEvent } from "@/lib/auth";
+
 import { useTheme } from "@/lib/theme";
 
 const items = [
