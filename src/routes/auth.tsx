@@ -19,6 +19,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
+import { friendlyAuthError, logAuthEvent, waitForSession } from "@/lib/auth";
+
 
 const loginSchema = z.object({
   email: z.string().trim().email("Enter a valid email").max(255),
