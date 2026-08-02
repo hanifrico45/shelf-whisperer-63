@@ -67,39 +67,78 @@ function AuthPage() {
     defaultValues: { email: "", password: "", fullName: "" },
   });
 
+  // If a session lands on this page (restored session, magic link, OAuth return),
+  // move the user straight to the dashboard instead of showing the login form again.
+  useEffect(() => {
+    let active = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active && data.session) navigate({ to: "/dashboard", replace: true });
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        navigate({ to: "/dashboard", replace: true });
+      }
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
   async function onLogin(values: z.infer<typeof loginSchema>) {
     setPending(true);
-    const { error } = await supabase.auth.signInWithPassword(values);
-    setPending(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const { error } = await supabase.auth.signInWithPassword(values);
+      if (error) {
+        toast.error(friendlyAuthError(error));
+        return;
+      }
+      // Ensure the session is persisted before navigating so the guard doesn't bounce back.
+      const session = await waitForSession();
+      if (!session) {
+        toast.error("Signed in, but the session could not be restored. Please try again.");
+        return;
+      }
+      void logAuthEvent("Login");
+      toast.success("Welcome back");
+      navigate({ to: "/dashboard", replace: true });
+    } catch (error) {
+      toast.error(friendlyAuthError(error));
+    } finally {
+      setPending(false);
     }
-    toast.success("Welcome back");
-    navigate({ to: "/dashboard" });
   }
 
   async function onRegister(values: z.infer<typeof registerSchema>) {
     setPending(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: values.fullName },
-      },
-    });
-    setPending(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
+          data: { full_name: values.fullName },
+        },
+      });
+      if (error) {
+        toast.error(friendlyAuthError(error));
+        return;
+      }
+      if (!data.session) {
+        setEmailSent(true);
+        toast.success("Check your email to confirm your account");
+        return;
+      }
+      await waitForSession();
+      void logAuthEvent("Login", values.email);
+      navigate({ to: "/dashboard", replace: true });
+    } catch (error) {
+      toast.error(friendlyAuthError(error));
+    } finally {
+      setPending(false);
     }
-    if (!data.session) {
-      setEmailSent(true);
-      toast.success("Check your email to confirm your account");
-      return;
-    }
-    navigate({ to: "/dashboard" });
+  }
+
   }
 
   return (
