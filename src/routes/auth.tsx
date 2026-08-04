@@ -138,7 +138,7 @@ function AuthPage() {
       }
       await waitForSession();
       void logAuthEvent("Login", values.email);
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: await resolveHomeRoute(), replace: true });
     } catch (error) {
       toast.error(friendlyAuthError(error));
     } finally {
