@@ -22,6 +22,7 @@ import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/po
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as ShopShopRouteImport } from './routes/_shop/shop'
+import { Route as ShopShopBookIdRouteImport } from './routes/_shop/shop.$bookId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -86,6 +87,11 @@ const ShopShopRoute = ShopShopRouteImport.update({
   path: '/shop',
   getParentRoute: () => ShopRouteRoute,
 } as any)
+const ShopShopBookIdRoute = ShopShopBookIdRouteImport.update({
+  id: '/$bookId',
+  path: '/$bookId',
+  getParentRoute: () => ShopShopRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,7 +104,8 @@ export interface FileRoutesByFullPath {
   '/pos': typeof AuthenticatedPosRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/shop': typeof ShopShopRoute
+  '/shop': typeof ShopShopRouteWithChildren
+  '/shop/$bookId': typeof ShopShopBookIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -111,7 +118,8 @@ export interface FileRoutesByTo {
   '/pos': typeof AuthenticatedPosRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/shop': typeof ShopShopRoute
+  '/shop': typeof ShopShopRouteWithChildren
+  '/shop/$bookId': typeof ShopShopBookIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -127,7 +135,8 @@ export interface FileRoutesById {
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
-  '/_shop/shop': typeof ShopShopRoute
+  '/_shop/shop': typeof ShopShopRouteWithChildren
+  '/_shop/shop/$bookId': typeof ShopShopBookIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/team'
     | '/shop'
+    | '/shop/$bookId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/team'
     | '/shop'
+    | '/shop/$bookId'
   id:
     | '__root__'
     | '/'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sales'
     | '/_authenticated/team'
     | '/_shop/shop'
+    | '/_shop/shop/$bookId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -275,6 +287,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopShopRouteImport
       parentRoute: typeof ShopRouteRoute
     }
+    '/_shop/shop/$bookId': {
+      id: '/_shop/shop/$bookId'
+      path: '/$bookId'
+      fullPath: '/shop/$bookId'
+      preLoaderRoute: typeof ShopShopBookIdRouteImport
+      parentRoute: typeof ShopShopRoute
+    }
   }
 }
 
@@ -299,12 +318,24 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ShopShopRouteChildren {
+  ShopShopBookIdRoute: typeof ShopShopBookIdRoute
+}
+
+const ShopShopRouteChildren: ShopShopRouteChildren = {
+  ShopShopBookIdRoute: ShopShopBookIdRoute,
+}
+
+const ShopShopRouteWithChildren = ShopShopRoute._addFileChildren(
+  ShopShopRouteChildren,
+)
+
 interface ShopRouteRouteChildren {
-  ShopShopRoute: typeof ShopShopRoute
+  ShopShopRoute: typeof ShopShopRouteWithChildren
 }
 
 const ShopRouteRouteChildren: ShopRouteRouteChildren = {
-  ShopShopRoute: ShopShopRoute,
+  ShopShopRoute: ShopShopRouteWithChildren,
 }
 
 const ShopRouteRouteWithChildren = ShopRouteRoute._addFileChildren(
