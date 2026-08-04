@@ -39,8 +39,9 @@ export const Route = createFileRoute("/auth")({
   }),
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
-    if (data.session) throw redirect({ to: "/dashboard" });
+    if (data.session) throw redirect({ to: await resolveHomeRoute() });
   },
+
   head: () => ({
     meta: [
       { title: "Sign in — Bookshelf Inventory" },
