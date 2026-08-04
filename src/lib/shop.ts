@@ -131,6 +131,37 @@ export async function removeCartItem(cartItemId: string) {
   if (error) throw error;
 }
 
+export interface ProfileRow {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  phone: string | null;
+}
+
+export async function fetchMyProfile(): Promise<ProfileRow | null> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id,email,full_name,phone")
+    .eq("id", auth.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateMyProfile(input: { full_name: string; phone: string }) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("You must be signed in.");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ full_name: input.full_name, phone: input.phone })
+    .eq("id", auth.user.id);
+  if (error) throw error;
+}
+
+
+
 export interface OrderRow {
   id: string;
   order_number: string;
