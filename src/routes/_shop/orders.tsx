@@ -65,7 +65,7 @@ function OrdersPage() {
               </div>
 
               <div className="mt-4 space-y-1 border-t border-border pt-3 text-sm">
-                {(order.items ?? []).map((item) => (
+                {(order.sales?.sale_items ?? []).map((item) => (
                   <div key={item.id} className="flex justify-between gap-3">
                     <span className="min-w-0 truncate text-muted-foreground">
                       {item.quantity} × {item.title}
