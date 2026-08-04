@@ -70,15 +70,19 @@ function AuthPage() {
   });
 
   // If a session lands on this page (restored session, magic link, OAuth return),
-  // move the user straight to the dashboard instead of showing the login form again.
+  // move the user straight to their home surface instead of showing the login form again.
   useEffect(() => {
     let active = true;
+    const go = async () => {
+      const to = await resolveHomeRoute();
+      if (active) navigate({ to, replace: true });
+    };
     void supabase.auth.getSession().then(({ data }) => {
-      if (active && data.session) navigate({ to: "/dashboard", replace: true });
+      if (active && data.session) void go();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        navigate({ to: "/dashboard", replace: true });
+        void go();
       }
     });
     return () => {
@@ -86,6 +90,7 @@ function AuthPage() {
       sub.subscription.unsubscribe();
     };
   }, [navigate]);
+
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
     setPending(true);
