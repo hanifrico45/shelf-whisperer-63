@@ -176,7 +176,7 @@ export async function placeOrder(input: {
     _shipping_address: input.shippingAddress,
     _contact_phone: input.contactPhone,
     _tax_rate: input.taxRate ?? 0,
-    _notes: input.notes ?? null,
+    _notes: input.notes ?? undefined,
   });
   if (error) throw error;
   return data as unknown as {
