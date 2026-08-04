@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError, logAuthEvent, waitForSession } from "@/lib/auth";
+import { resolveHomeRoute } from "@/lib/roles";
 
 
 
