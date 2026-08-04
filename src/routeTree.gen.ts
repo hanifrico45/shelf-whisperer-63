@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as ShopRouteRouteImport } from './routes/_shop/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -20,6 +21,12 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
+import { Route as ShopAccountRouteImport } from './routes/_shop/account'
+import { Route as ShopCartRouteImport } from './routes/_shop/cart'
+import { Route as ShopCheckoutRouteImport } from './routes/_shop/checkout'
+import { Route as ShopOrdersRouteImport } from './routes/_shop/orders'
+import { Route as ShopShopRouteImport } from './routes/_shop/shop'
+import { Route as ShopShopBookIdRouteImport } from './routes/_shop/shop.$bookId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,6 +35,10 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopRouteRoute = ShopRouteRouteImport.update({
+  id: '/_shop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -75,6 +86,36 @@ const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ShopAccountRoute = ShopAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => ShopRouteRoute,
+} as any)
+const ShopCartRoute = ShopCartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => ShopRouteRoute,
+} as any)
+const ShopCheckoutRoute = ShopCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => ShopRouteRoute,
+} as any)
+const ShopOrdersRoute = ShopOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => ShopRouteRoute,
+} as any)
+const ShopShopRoute = ShopShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => ShopRouteRoute,
+} as any)
+const ShopShopBookIdRoute = ShopShopBookIdRouteImport.update({
+  id: '/$bookId',
+  path: '/$bookId',
+  getParentRoute: () => ShopShopRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -87,6 +128,12 @@ export interface FileRoutesByFullPath {
   '/pos': typeof AuthenticatedPosRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/account': typeof ShopAccountRoute
+  '/cart': typeof ShopCartRoute
+  '/checkout': typeof ShopCheckoutRoute
+  '/orders': typeof ShopOrdersRoute
+  '/shop': typeof ShopShopRouteWithChildren
+  '/shop/$bookId': typeof ShopShopBookIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -99,11 +146,18 @@ export interface FileRoutesByTo {
   '/pos': typeof AuthenticatedPosRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/account': typeof ShopAccountRoute
+  '/cart': typeof ShopCartRoute
+  '/checkout': typeof ShopCheckoutRoute
+  '/orders': typeof ShopOrdersRoute
+  '/shop': typeof ShopShopRouteWithChildren
+  '/shop/$bookId': typeof ShopShopBookIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_shop': typeof ShopRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -113,6 +167,12 @@ export interface FileRoutesById {
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
+  '/_shop/account': typeof ShopAccountRoute
+  '/_shop/cart': typeof ShopCartRoute
+  '/_shop/checkout': typeof ShopCheckoutRoute
+  '/_shop/orders': typeof ShopOrdersRoute
+  '/_shop/shop': typeof ShopShopRouteWithChildren
+  '/_shop/shop/$bookId': typeof ShopShopBookIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,6 +187,12 @@ export interface FileRouteTypes {
     | '/pos'
     | '/sales'
     | '/team'
+    | '/account'
+    | '/cart'
+    | '/checkout'
+    | '/orders'
+    | '/shop'
+    | '/shop/$bookId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -139,10 +205,17 @@ export interface FileRouteTypes {
     | '/pos'
     | '/sales'
     | '/team'
+    | '/account'
+    | '/cart'
+    | '/checkout'
+    | '/orders'
+    | '/shop'
+    | '/shop/$bookId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/_shop'
     | '/auth'
     | '/forgot-password'
     | '/reset-password'
@@ -152,11 +225,18 @@ export interface FileRouteTypes {
     | '/_authenticated/pos'
     | '/_authenticated/sales'
     | '/_authenticated/team'
+    | '/_shop/account'
+    | '/_shop/cart'
+    | '/_shop/checkout'
+    | '/_shop/orders'
+    | '/_shop/shop'
+    | '/_shop/shop/$bookId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ShopRouteRoute: typeof ShopRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -176,6 +256,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_shop': {
+      id: '/_shop'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ShopRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -241,6 +328,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeamRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_shop/account': {
+      id: '/_shop/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof ShopAccountRouteImport
+      parentRoute: typeof ShopRouteRoute
+    }
+    '/_shop/cart': {
+      id: '/_shop/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof ShopCartRouteImport
+      parentRoute: typeof ShopRouteRoute
+    }
+    '/_shop/checkout': {
+      id: '/_shop/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof ShopCheckoutRouteImport
+      parentRoute: typeof ShopRouteRoute
+    }
+    '/_shop/orders': {
+      id: '/_shop/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof ShopOrdersRouteImport
+      parentRoute: typeof ShopRouteRoute
+    }
+    '/_shop/shop': {
+      id: '/_shop/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopShopRouteImport
+      parentRoute: typeof ShopRouteRoute
+    }
+    '/_shop/shop/$bookId': {
+      id: '/_shop/shop/$bookId'
+      path: '/$bookId'
+      fullPath: '/shop/$bookId'
+      preLoaderRoute: typeof ShopShopBookIdRouteImport
+      parentRoute: typeof ShopShopRoute
+    }
   }
 }
 
@@ -265,9 +394,42 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ShopShopRouteChildren {
+  ShopShopBookIdRoute: typeof ShopShopBookIdRoute
+}
+
+const ShopShopRouteChildren: ShopShopRouteChildren = {
+  ShopShopBookIdRoute: ShopShopBookIdRoute,
+}
+
+const ShopShopRouteWithChildren = ShopShopRoute._addFileChildren(
+  ShopShopRouteChildren,
+)
+
+interface ShopRouteRouteChildren {
+  ShopAccountRoute: typeof ShopAccountRoute
+  ShopCartRoute: typeof ShopCartRoute
+  ShopCheckoutRoute: typeof ShopCheckoutRoute
+  ShopOrdersRoute: typeof ShopOrdersRoute
+  ShopShopRoute: typeof ShopShopRouteWithChildren
+}
+
+const ShopRouteRouteChildren: ShopRouteRouteChildren = {
+  ShopAccountRoute: ShopAccountRoute,
+  ShopCartRoute: ShopCartRoute,
+  ShopCheckoutRoute: ShopCheckoutRoute,
+  ShopOrdersRoute: ShopOrdersRoute,
+  ShopShopRoute: ShopShopRouteWithChildren,
+}
+
+const ShopRouteRouteWithChildren = ShopRouteRoute._addFileChildren(
+  ShopRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ShopRouteRoute: ShopRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,

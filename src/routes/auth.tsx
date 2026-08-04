@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError, logAuthEvent, waitForSession } from "@/lib/auth";
+import { resolveHomeRoute } from "@/lib/roles";
 
 
 
@@ -39,8 +40,9 @@ export const Route = createFileRoute("/auth")({
   }),
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
-    if (data.session) throw redirect({ to: "/dashboard" });
+    if (data.session) throw redirect({ to: await resolveHomeRoute() });
   },
+
   head: () => ({
     meta: [
       { title: "Sign in — Bookshelf Inventory" },
@@ -68,15 +70,19 @@ function AuthPage() {
   });
 
   // If a session lands on this page (restored session, magic link, OAuth return),
-  // move the user straight to the dashboard instead of showing the login form again.
+  // move the user straight to their home surface instead of showing the login form again.
   useEffect(() => {
     let active = true;
+    const go = async () => {
+      const to = await resolveHomeRoute();
+      if (active) navigate({ to, replace: true });
+    };
     void supabase.auth.getSession().then(({ data }) => {
-      if (active && data.session) navigate({ to: "/dashboard", replace: true });
+      if (active && data.session) void go();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        navigate({ to: "/dashboard", replace: true });
+        void go();
       }
     });
     return () => {
@@ -84,6 +90,7 @@ function AuthPage() {
       sub.subscription.unsubscribe();
     };
   }, [navigate]);
+
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
     setPending(true);
@@ -101,7 +108,7 @@ function AuthPage() {
       }
       void logAuthEvent("Login");
       toast.success("Welcome back");
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: await resolveHomeRoute(), replace: true });
     } catch (error) {
       toast.error(friendlyAuthError(error));
     } finally {
@@ -131,7 +138,7 @@ function AuthPage() {
       }
       await waitForSession();
       void logAuthEvent("Login", values.email);
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: await resolveHomeRoute(), replace: true });
     } catch (error) {
       toast.error(friendlyAuthError(error));
     } finally {

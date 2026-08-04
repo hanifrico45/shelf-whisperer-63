@@ -129,6 +129,41 @@ export type Database = {
           },
         ]
       }
+      cart_items: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          quantity: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -262,6 +297,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      orders: {
+        Row: {
+          contact_phone: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          notes: string | null
+          order_number: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          sale_id: string | null
+          shipping_address: string | null
+          status: string
+          subtotal: number
+          tax_amount: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          contact_phone?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          notes?: string | null
+          order_number: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          sale_id?: string | null
+          shipping_address?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          contact_phone?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          order_number?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          sale_id?: string | null
+          shipping_address?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -704,9 +798,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
+      place_customer_order: {
+        Args: {
+          _contact_phone: string
+          _notes?: string
+          _payment_method: string
+          _shipping_address: string
+          _tax_rate?: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
-      app_role: "owner" | "manager" | "cashier" | "inventory_staff"
+      app_role: "owner" | "manager" | "cashier" | "inventory_staff" | "customer"
       book_status: "active" | "archived" | "out_of_stock" | "discontinued"
       payment_method: "cash" | "card" | "transfer"
       purchase_order_status:
@@ -843,7 +948,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "manager", "cashier", "inventory_staff"],
+      app_role: ["owner", "manager", "cashier", "inventory_staff", "customer"],
       book_status: ["active", "archived", "out_of_stock", "discontinued"],
       payment_method: ["cash", "card", "transfer"],
       purchase_order_status: [
