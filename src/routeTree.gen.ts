@@ -21,6 +21,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
+import { Route as ShopCartRouteImport } from './routes/_shop/cart'
 import { Route as ShopShopRouteImport } from './routes/_shop/shop'
 import { Route as ShopShopBookIdRouteImport } from './routes/_shop/shop.$bookId'
 
@@ -82,6 +83,11 @@ const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ShopCartRoute = ShopCartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => ShopRouteRoute,
+} as any)
 const ShopShopRoute = ShopShopRouteImport.update({
   id: '/shop',
   path: '/shop',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/pos': typeof AuthenticatedPosRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/cart': typeof ShopCartRoute
   '/shop': typeof ShopShopRouteWithChildren
   '/shop/$bookId': typeof ShopShopBookIdRoute
 }
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/pos': typeof AuthenticatedPosRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/cart': typeof ShopCartRoute
   '/shop': typeof ShopShopRouteWithChildren
   '/shop/$bookId': typeof ShopShopBookIdRoute
 }
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
+  '/_shop/cart': typeof ShopCartRoute
   '/_shop/shop': typeof ShopShopRouteWithChildren
   '/_shop/shop/$bookId': typeof ShopShopBookIdRoute
 }
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/pos'
     | '/sales'
     | '/team'
+    | '/cart'
     | '/shop'
     | '/shop/$bookId'
   fileRoutesByTo: FileRoutesByTo
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/pos'
     | '/sales'
     | '/team'
+    | '/cart'
     | '/shop'
     | '/shop/$bookId'
   id:
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pos'
     | '/_authenticated/sales'
     | '/_authenticated/team'
+    | '/_shop/cart'
     | '/_shop/shop'
     | '/_shop/shop/$bookId'
   fileRoutesById: FileRoutesById
@@ -280,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeamRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_shop/cart': {
+      id: '/_shop/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof ShopCartRouteImport
+      parentRoute: typeof ShopRouteRoute
+    }
     '/_shop/shop': {
       id: '/_shop/shop'
       path: '/shop'
@@ -331,10 +350,12 @@ const ShopShopRouteWithChildren = ShopShopRoute._addFileChildren(
 )
 
 interface ShopRouteRouteChildren {
+  ShopCartRoute: typeof ShopCartRoute
   ShopShopRoute: typeof ShopShopRouteWithChildren
 }
 
 const ShopRouteRouteChildren: ShopRouteRouteChildren = {
+  ShopCartRoute: ShopCartRoute,
   ShopShopRoute: ShopShopRouteWithChildren,
 }
 
