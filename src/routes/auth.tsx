@@ -108,7 +108,7 @@ function AuthPage() {
       }
       void logAuthEvent("Login");
       toast.success("Welcome back");
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: await resolveHomeRoute(), replace: true });
     } catch (error) {
       toast.error(friendlyAuthError(error));
     } finally {
