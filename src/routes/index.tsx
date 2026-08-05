@@ -31,7 +31,7 @@ export const Route = createFileRoute("/")({
 const features = [
   { icon: Boxes, title: "Live inventory", body: "Stock levels, shelf locations and low-stock alerts." },
   { icon: BarChart3, title: "Value at a glance", body: "Inventory cost and retail value on one dashboard." },
-  { icon: ShieldCheck, title: "Roles & audit trail", body: "Owner, manager, cashier and staff with full history." },
+  { icon: ShieldCheck, title: "Roles & audit trail", body: "Owner and customer accounts with full history." },
 ];
 
 function Landing() {
