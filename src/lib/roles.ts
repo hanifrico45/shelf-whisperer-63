@@ -1,8 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "owner" | "manager" | "cashier" | "inventory_staff" | "customer";
-
-const STAFF_ROLES: AppRole[] = ["owner", "manager", "cashier", "inventory_staff"];
+export type AppRole = "owner" | "customer";
 
 /** Roles for the signed-in user. Returns [] when signed out. */
 export async function fetchMyRoles(): Promise<AppRole[]> {
@@ -16,11 +14,12 @@ export async function fetchMyRoles(): Promise<AppRole[]> {
   return (data ?? []).map((r) => r.role as AppRole);
 }
 
+/** Only owners get the admin workspace. */
 export function isStaffRole(roles: AppRole[]) {
-  return roles.some((r) => STAFF_ROLES.includes(r));
+  return roles.includes("owner");
 }
 
-/** Landing route after sign-in: admin workspace for staff, storefront for customers. */
+/** Landing route after sign-in: admin workspace for owners, storefront for customers. */
 export async function resolveHomeRoute(): Promise<"/dashboard" | "/shop"> {
   const roles = await fetchMyRoles();
   return isStaffRole(roles) ? "/dashboard" : "/shop";

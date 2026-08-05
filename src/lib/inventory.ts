@@ -2,14 +2,13 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 
 export type BookStatus = "active" | "archived" | "out_of_stock" | "discontinued";
-export type AppRole = "owner" | "manager" | "cashier" | "inventory_staff";
+export type AppRole = "owner" | "customer";
 
 export const ROLE_LABELS: Record<AppRole, string> = {
   owner: "Owner",
-  manager: "Manager",
-  cashier: "Cashier",
-  inventory_staff: "Inventory Staff",
+  customer: "Customer",
 };
+
 
 export interface BookRow {
   id: string;
