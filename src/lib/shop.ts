@@ -11,13 +11,12 @@ export interface ShopBook {
   status: string;
   category_id: string | null;
   categories: { id: string; name: string } | null;
-  publishers: { id: string; name: string } | null;
   inventory: { quantity: number } | null;
 }
 
 const SHOP_SELECT =
   "id,title,author,isbn,description,cover_url,selling_price,status,category_id," +
-  "categories(id,name),publishers(id,name),inventory(quantity)";
+  "categories(id,name),inventory(quantity)";
 
 export async function fetchShopBooks(params: {
   search: string;

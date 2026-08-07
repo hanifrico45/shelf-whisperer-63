@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { currency, fetchAllBooksLight, fetchAuditLogs } from "@/lib/inventory";
-import { fetchSales } from "@/lib/pos";
+import { fetchSales, fetchSalesSummary } from "@/lib/pos";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -60,6 +60,10 @@ function DashboardPage() {
     queryKey: ["dashboard-sales"],
     queryFn: () => fetchSales("", 0, 100),
   });
+  const summaryQuery = useQuery({
+    queryKey: ["sales-summary"],
+    queryFn: fetchSalesSummary,
+  });
 
   useEffect(() => {
     const channel = supabase
@@ -75,6 +79,7 @@ function DashboardPage() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "sales" }, () => {
         queryClient.invalidateQueries({ queryKey: ["dashboard-sales"] });
+        queryClient.invalidateQueries({ queryKey: ["sales-summary"] });
         queryClient.invalidateQueries({ queryKey: ["books-light"] });
       })
       .subscribe();
@@ -116,6 +121,14 @@ function DashboardPage() {
     { label: "Out of Stock", value: outOfStock.toString(), icon: PackageX, hint: "need reordering" },
   ];
 
+  const summary = summaryQuery.data;
+  const summaryPeriods = [
+    { label: "Today", hint: "since midnight", ...(summary?.today ?? { total: 0, count: 0 }) },
+    { label: "This week", hint: "from Monday", ...(summary?.week ?? { total: 0, count: 0 }) },
+    { label: "This month", hint: "month to date", ...(summary?.month ?? { total: 0, count: 0 }) },
+    { label: "This year", hint: "year to date", ...(summary?.year ?? { total: 0, count: 0 }) },
+  ];
+
   const topTitles = [...books]
     .sort((a, b) => (b.inventory?.quantity ?? 0) - (a.inventory?.quantity ?? 0))
     .slice(0, 6)
@@ -140,6 +153,30 @@ function DashboardPage() {
                 </div>
               </div>
             ))}
+      </div>
+
+      <div className="mt-6 card-elevated p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-semibold">Sales summary</h2>
+          <Badge variant="secondary">Completed sales</Badge>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {summaryQuery.isLoading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 rounded-xl" />
+              ))
+            : summaryPeriods.map((period) => (
+                <div key={period.label} className="rounded-xl border border-border p-4">
+                  <p className="text-sm text-muted-foreground">{period.label}</p>
+                  <p className="mt-2 font-display text-2xl font-semibold tabular-nums">
+                    {currency(period.total)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {period.count} {period.count === 1 ? "sale" : "sales"} · {period.hint}
+                  </p>
+                </div>
+              ))}
+        </div>
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">

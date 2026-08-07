@@ -49,7 +49,6 @@ const emptyValues: BookFormValues = {
   isbn: "",
   barcode: "",
   category_id: "",
-  publisher_id: "",
   supplier_id: "",
   purchase_cost: 0,
   selling_price: 0,
@@ -65,14 +64,12 @@ export function BookDialog({
   onOpenChange,
   book,
   categories,
-  publishers,
   suppliers,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   book: BookRow | null;
   categories: RefRow[];
-  publishers: RefRow[];
   suppliers: RefRow[];
 }) {
   const queryClient = useQueryClient();
@@ -93,7 +90,6 @@ export function BookDialog({
             isbn: book.isbn ?? "",
             barcode: book.barcode ?? "",
             category_id: book.category_id ?? "",
-            publisher_id: book.publisher_id ?? "",
             supplier_id: book.supplier_id ?? "",
             purchase_cost: Number(book.purchase_cost),
             selling_price: Number(book.selling_price),
@@ -234,12 +230,6 @@ export function BookDialog({
               />
               <RefSelect
                 control={form.control}
-                name="publisher_id"
-                label="Publisher"
-                options={publishers}
-              />
-              <RefSelect
-                control={form.control}
                 name="supplier_id"
                 label="Supplier"
                 options={suppliers}
@@ -364,7 +354,7 @@ function RefSelect({
   options,
 }: {
   control: ReturnType<typeof useForm<BookFormValues>>["control"];
-  name: "category_id" | "publisher_id" | "supplier_id";
+  name: "category_id" | "supplier_id";
   label: string;
   options: RefRow[];
 }) {

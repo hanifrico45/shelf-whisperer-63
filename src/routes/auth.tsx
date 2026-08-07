@@ -31,6 +31,7 @@ const loginSchema = z.object({
 
 const registerSchema = loginSchema.extend({
   fullName: z.string().trim().min(2, "Enter your name").max(100),
+  phone: z.string().trim().min(7, "Enter a valid phone number").max(20),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -66,7 +67,7 @@ function AuthPage() {
   });
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { email: "", password: "", fullName: "" },
+    defaultValues: { email: "", password: "", fullName: "", phone: "" },
   });
 
   // If a session lands on this page (restored session, magic link, OAuth return),
@@ -124,7 +125,7 @@ function AuthPage() {
         password: values.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth`,
-          data: { full_name: values.fullName },
+          data: { full_name: values.fullName, phone: values.phone },
         },
       });
       if (error) {
@@ -137,6 +138,9 @@ function AuthPage() {
         return;
       }
       await waitForSession();
+      if (data.user) {
+        await supabase.from("profiles").update({ phone: values.phone }).eq("id", data.user.id);
+      }
       void logAuthEvent("Login", values.email);
       navigate({ to: await resolveHomeRoute(), replace: true });
     } catch (error) {
@@ -259,6 +263,19 @@ function AuthPage() {
                           <FormLabel>Full name</FormLabel>
                           <FormControl>
                             <Input placeholder="Ada Okoro" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone number</FormLabel>
+                          <FormControl>
+                            <Input type="tel" placeholder="e.g. 0803 000 1234" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

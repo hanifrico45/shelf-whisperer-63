@@ -19,7 +19,6 @@ export interface BookRow {
   cover_url: string | null;
   description: string | null;
   category_id: string | null;
-  publisher_id: string | null;
   supplier_id: string | null;
   purchase_cost: number;
   selling_price: number;
@@ -27,7 +26,6 @@ export interface BookRow {
   created_at: string;
   updated_at: string;
   categories: { id: string; name: string } | null;
-  publishers: { id: string; name: string } | null;
   suppliers: { id: string; name: string } | null;
   inventory: {
     id: string;
@@ -54,7 +52,7 @@ export interface AuditRow {
 const sel = (s: string): string => s;
 
 const BOOK_SELECT =
-  "id,title,author,isbn,barcode,cover_url,description,category_id,publisher_id,supplier_id,purchase_cost,selling_price,status,created_at,updated_at,categories(id,name),publishers(id,name),suppliers(id,name),inventory(id,quantity,minimum_stock_level,shelf_location)";
+  "id,title,author,isbn,barcode,cover_url,description,category_id,supplier_id,purchase_cost,selling_price,status,created_at,updated_at,categories(id,name),suppliers(id,name),inventory(id,quantity,minimum_stock_level,shelf_location)";
 
 export const bookSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
@@ -62,7 +60,6 @@ export const bookSchema = z.object({
   isbn: z.string().trim().max(20).optional().or(z.literal("")),
   barcode: z.string().trim().max(50).optional().or(z.literal("")),
   category_id: z.string().optional().or(z.literal("")),
-  publisher_id: z.string().optional().or(z.literal("")),
   supplier_id: z.string().optional().or(z.literal("")),
   purchase_cost: z.coerce.number().min(0, "Must be 0 or more"),
   selling_price: z.coerce.number().min(0, "Must be 0 or more"),
@@ -151,7 +148,7 @@ export async function fetchAllBooksLight() {
   return data ?? [];
 }
 
-export async function fetchRefTable(table: "categories" | "publishers" | "suppliers") {
+export async function fetchRefTable(table: "categories" | "suppliers") {
   const { data, error } = await supabase
     .from(table)
     .select(sel("id,name"))
@@ -203,7 +200,6 @@ export async function createBook(values: BookFormValues) {
       barcode: nullable(values.barcode),
       cover_url: nullable(values.cover_url),
       category_id: nullable(values.category_id),
-      publisher_id: nullable(values.publisher_id),
       supplier_id: nullable(values.supplier_id),
       purchase_cost: values.purchase_cost,
       selling_price: values.selling_price,
@@ -237,7 +233,6 @@ export async function updateBook(book: BookRow, values: BookFormValues) {
       barcode: nullable(values.barcode),
       cover_url: nullable(values.cover_url),
       category_id: nullable(values.category_id),
-      publisher_id: nullable(values.publisher_id),
       supplier_id: nullable(values.supplier_id),
       purchase_cost: values.purchase_cost,
       selling_price: values.selling_price,
@@ -291,4 +286,9 @@ export async function signedCoverUrl(path: string | null) {
 }
 
 export const currency = (value: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value || 0);
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    currencyDisplay: "symbol",
+    minimumFractionDigits: 2,
+  }).format(value || 0);
