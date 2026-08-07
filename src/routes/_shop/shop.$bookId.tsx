@@ -74,7 +74,6 @@ function BookDetailPage() {
             <p className="mt-1 text-muted-foreground">by {book.author}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {book.categories ? <Badge variant="secondary">{book.categories.name}</Badge> : null}
-              {book.publishers ? <Badge variant="outline">{book.publishers.name}</Badge> : null}
               {book.isbn ? <Badge variant="outline">ISBN {book.isbn}</Badge> : null}
             </div>
 

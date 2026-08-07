@@ -103,7 +103,6 @@ function BooksPage() {
   }, [search]);
 
   const categories = useQuery({ queryKey: ["categories"], queryFn: () => fetchRefTable("categories") });
-  const publishers = useQuery({ queryKey: ["publishers"], queryFn: () => fetchRefTable("publishers") });
   const suppliers = useQuery({ queryKey: ["suppliers"], queryFn: () => fetchRefTable("suppliers") });
 
   const booksQuery = useQuery({
@@ -245,7 +244,6 @@ function BooksPage() {
               <TableHead className="w-16">Cover</TableHead>
               <TableHead>Title</TableHead>
               <TableHead className="hidden md:table-cell">Category</TableHead>
-              <TableHead className="hidden lg:table-cell">Publisher</TableHead>
               <TableHead className="hidden lg:table-cell">Shelf</TableHead>
               <TableHead className="text-right">Cost</TableHead>
               <TableHead className="text-right">Price</TableHead>
@@ -258,14 +256,14 @@ function BooksPage() {
             {booksQuery.isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={10}>
+                  <TableCell colSpan={9}>
                     <Skeleton className="h-10 w-full" />
                   </TableCell>
                 </TableRow>
               ))
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10}>
+                <TableCell colSpan={9}>
                   <div className="flex flex-col items-center gap-3 py-14 text-center">
                     <span className="flex size-12 items-center justify-center rounded-full bg-secondary">
                       <Library className="size-5 text-secondary-foreground" />
@@ -305,9 +303,6 @@ function BooksPage() {
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {book.categories?.name ?? "—"}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                      {book.publishers?.name ?? "—"}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                       {book.inventory?.shelf_location ?? "—"}
@@ -404,7 +399,6 @@ function BooksPage() {
         onOpenChange={setDialogOpen}
         book={editing}
         categories={categories.data ?? []}
-        publishers={publishers.data ?? []}
         suppliers={suppliers.data ?? []}
       />
 
