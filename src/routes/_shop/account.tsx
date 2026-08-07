@@ -72,7 +72,7 @@ function AccountPage() {
               id="profile-phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 555 000 1234"
+              placeholder="e.g. 0803 000 1234"
             />
           </div>
           <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>

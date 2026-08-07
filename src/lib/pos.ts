@@ -148,6 +148,53 @@ export async function fetchSales(search: string, page: number, pageSize: number)
   return { rows: data ?? [], count: count ?? 0 };
 }
 
+export interface SalesSummary {
+  today: { total: number; count: number };
+  week: { total: number; count: number };
+  month: { total: number; count: number };
+  year: { total: number; count: number };
+}
+
+/** Totals for this week (Mon-start), month and year, from completed sales. */
+export async function fetchSalesSummary(): Promise<SalesSummary> {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekday = (now.getDay() + 6) % 7; // Monday = 0
+  const startOfWeek = new Date(startOfDay);
+  startOfWeek.setDate(startOfWeek.getDate() - weekday);
+
+  const { data, error } = await supabase
+    .from("sales")
+    .select("total,created_at,status")
+    .eq("status", "completed")
+    .gte("created_at", startOfYear.toISOString())
+    .returns<{ total: number; created_at: string }[]>();
+  if (error) throw error;
+
+  const empty = () => ({ total: 0, count: 0 });
+  const summary: SalesSummary = {
+    today: empty(),
+    week: empty(),
+    month: empty(),
+    year: empty(),
+  };
+  for (const row of data ?? []) {
+    const at = new Date(row.created_at);
+    const amount = Number(row.total) || 0;
+    const add = (bucket: { total: number; count: number }) => {
+      bucket.total += amount;
+      bucket.count += 1;
+    };
+    add(summary.year);
+    if (at >= startOfMonth) add(summary.month);
+    if (at >= startOfWeek) add(summary.week);
+    if (at >= startOfDay) add(summary.today);
+  }
+  return summary;
+}
+
 export async function fetchSale(saleId: string) {
   const { data, error } = await supabase
     .from("sales")
