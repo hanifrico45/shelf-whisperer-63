@@ -1,13 +1,15 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_shop")({
+  // Keep SSR off for the storefront UI
   ssr: false,
+  // Do not force-sign-in here — allow public browsing.
+  // We still return the current user (if any) for convenience.
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
+    const { data } = await supabase.auth.getUser();
+    return { user: data.user ?? null };
   },
   pendingMs: 0,
   pendingComponent: () => (
