@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { ShopShell } from "@/components/shop/ShopShell";
@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { currency } from "@/lib/inventory";
 import { fetchCart, placeOrder } from "@/lib/shop";
+import { supabase } from "@/integrations/supabase/client";
 
 const TAX_RATE = 7.5;
 
@@ -25,11 +26,14 @@ export const Route = createFileRoute("/_shop/checkout")({
       { property: "og:description", content: "Secure checkout for your Bookshelf order." },
     ],
   }),
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) throw redirect({ to: "/auth?next=/checkout" });
+  },
   component: CheckoutPage,
 });
 
 function CheckoutPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const cartQuery = useQuery({ queryKey: ["cart"], queryFn: fetchCart });
 
@@ -72,7 +76,7 @@ function CheckoutPage() {
           <CheckCircle2 className="mx-auto size-12 text-primary" />
           <h1 className="mt-4 font-display text-2xl font-semibold">Thank you for your order</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Order <span className="font-medium text-foreground">{placed.order_number}</span> ·{" "}
+            Order <span className="font-medium text-foreground">{placed.order_number}</span> · {" "}
             {currency(placed.total)}
           </p>
           <div className="mt-6 flex justify-center gap-2">
@@ -98,10 +102,7 @@ function CheckoutPage() {
         <Skeleton className="mt-6 h-72 rounded-xl" />
       ) : rows.length === 0 ? (
         <div className="mt-10 rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-          Your cart is empty.{" "}
-          <Link to="/shop" className="underline">
-            Browse books
-          </Link>
+          Your cart is empty. <Link to="/shop" className="underline">Browse books</Link>
         </div>
       ) : (
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -119,37 +120,18 @@ function CheckoutPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Contact phone</Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 555 000 1234"
-              />
+              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 000 1234" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Order notes (optional)</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                placeholder="Delivery instructions"
-              />
+              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Delivery instructions" />
             </div>
 
             <div className="space-y-2 pt-2">
               <Label>Payment method</Label>
-              <RadioGroup
-                value={method}
-                onValueChange={(v) => setMethod(v as typeof method)}
-                className="grid gap-2 sm:grid-cols-3"
-              >
+              <RadioGroup value={method} onValueChange={(v) => setMethod(v as typeof method)} className="grid gap-2 sm:grid-cols-3">
                 {(["card", "cash", "transfer"] as const).map((m) => (
-                  <Label
-                    key={m}
-                    htmlFor={`pay-${m}`}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm capitalize has-[:checked]:border-primary"
-                  >
+                  <Label key={m} htmlFor={`pay-${m}`} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm capitalize has-[:checked]:border-primary">
                     <RadioGroupItem id={`pay-${m}`} value={m} />
                     {m === "cash" ? "Cash on delivery" : m}
                   </Label>
@@ -163,9 +145,7 @@ function CheckoutPage() {
             <div className="mt-4 space-y-2 text-sm">
               {rows.map((row) => (
                 <div key={row.id} className="flex justify-between gap-3">
-                  <span className="min-w-0 truncate text-muted-foreground">
-                    {row.quantity} × {row.books?.title}
-                  </span>
+                  <span className="min-w-0 truncate text-muted-foreground">{row.quantity} × {row.books?.title}</span>
                   <span>{currency(Number(row.books?.selling_price ?? 0) * row.quantity)}</span>
                 </div>
               ))}
@@ -184,11 +164,7 @@ function CheckoutPage() {
                 <span>{currency(total)}</span>
               </div>
             </div>
-            <Button
-              className="mt-5 w-full"
-              disabled={!canSubmit || orderMutation.isPending}
-              onClick={() => orderMutation.mutate()}
-            >
+            <Button className="mt-5 w-full" disabled={!canSubmit || orderMutation.isPending} onClick={() => orderMutation.mutate()}>
               {orderMutation.isPending ? (
                 <>
                   <Loader2 className="size-4 animate-spin" /> Placing order…
@@ -197,9 +173,7 @@ function CheckoutPage() {
                 "Place order"
               )}
             </Button>
-            <p className="mt-2 text-center text-xs text-muted-foreground">
-              Stock is reserved the moment your order is confirmed.
-            </p>
+            <p className="mt-2 text-center text-xs text-muted-foreground">Stock is reserved the moment your order is confirmed.</p>
           </div>
         </div>
       )}
