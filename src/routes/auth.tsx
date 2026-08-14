@@ -21,6 +21,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError, logAuthEvent, waitForSession } from "@/lib/auth";
 import { resolveHomeRoute } from "@/lib/roles";
+import { mergeGuestCartIntoUser } from "@/lib/guestCart";
 
 
 
@@ -38,6 +39,7 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
     mode: search["mode"] === "register" ? "register" : "login",
+    next: typeof search["next"] === "string" ? String(search["next"]) : undefined,
   }),
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
@@ -108,8 +110,17 @@ function AuthPage() {
         return;
       }
       void logAuthEvent("Login");
+      // attempt to merge guest cart into user cart (best-effort)
+      try {
+        await mergeGuestCartIntoUser();
+      } catch (err) {
+        console.warn("Guest cart merge failed", err);
+      }
+
+      const search = Route.useSearch() as any;
+      const dest = search.next && String(search.next).startsWith("/") ? String(search.next) : await resolveHomeRoute();
       toast.success("Welcome back");
-      navigate({ to: await resolveHomeRoute(), replace: true });
+      navigate({ to: dest, replace: true });
     } catch (error) {
       toast.error(friendlyAuthError(error));
     } finally {
@@ -142,7 +153,16 @@ function AuthPage() {
         await supabase.from("profiles").update({ phone: values.phone }).eq("id", data.user.id);
       }
       void logAuthEvent("Login", values.email);
-      navigate({ to: await resolveHomeRoute(), replace: true });
+
+      try {
+        await mergeGuestCartIntoUser();
+      } catch (err) {
+        console.warn("Guest cart merge failed", err);
+      }
+
+      const search = Route.useSearch() as any;
+      const dest = search.next && String(search.next).startsWith("/") ? String(search.next) : await resolveHomeRoute();
+      navigate({ to: dest, replace: true });
     } catch (error) {
       toast.error(friendlyAuthError(error));
     } finally {
