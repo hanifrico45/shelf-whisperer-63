@@ -1,6 +1,7 @@
+import { getGuestCartCount } from "@/lib/guestCart";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type ReactNode, useState } from "react";
 import { BookOpen, LogOut, Moon, ShoppingCart, Sun, User, Package } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,20 @@ export function ShopShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const cartQuery = useQuery({ queryKey: ["cart"], queryFn: fetchCart });
-  const cartCount = (cartQuery.data ?? []).reduce((sum, r) => sum + r.quantity, 0);
+  const [guestCount, setGuestCount] = useState(() =>
+    typeof window !== "undefined" ? getGuestCartCount() : 0,
+  );
+  const [authed, setAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setAuthed(Boolean(data.user)));
+    const handler = () => setGuestCount(getGuestCartCount());
+    window.addEventListener("guest-cart-changed", handler);
+    return () => window.removeEventListener("guest-cart-changed", handler);
+  }, []);
+
+  const serverCount = (cartQuery.data ?? []).reduce((sum, r) => sum + r.quantity, 0);
+  const cartCount = authed ? serverCount : serverCount + guestCount;
 
   useEffect(() => {
     const channel = supabase
