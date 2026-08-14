@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currency } from "@/lib/inventory";
-import { addToCart, fetchShopBook } from "@/lib/shop";
+import { fetchShopBook } from "@/lib/shop";
+import { addToCartClient } from "@/lib/guestCart";
 
 export const Route = createFileRoute("/_shop/shop/$bookId")({
   head: () => ({
@@ -36,7 +37,7 @@ function BookDetailPage() {
   });
 
   const addMutation = useMutation({
-    mutationFn: () => addToCart(bookId, qty),
+    mutationFn: () => addToCartClient(bookId, qty),
     onSuccess: () => {
       toast.success("Added to cart");
       queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -77,12 +78,8 @@ function BookDetailPage() {
               {book.isbn ? <Badge variant="outline">ISBN {book.isbn}</Badge> : null}
             </div>
 
-            <p className="mt-6 font-display text-3xl font-semibold">
-              {currency(Number(book.selling_price))}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {stock > 0 ? `${stock} copies available` : "Currently sold out"}
-            </p>
+            <p className="mt-6 font-display text-3xl font-semibold">{currency(Number(book.selling_price))}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{stock > 0 ? `${stock} copies available` : "Currently sold out"}</p>
 
             <div className="mt-5 flex items-center gap-3">
               <Input
@@ -90,15 +87,10 @@ function BookDetailPage() {
                 min={1}
                 max={Math.max(1, stock)}
                 value={qty}
-                onChange={(e) =>
-                  setQty(Math.max(1, Math.min(stock || 1, Number(e.target.value) || 1)))
-                }
+                onChange={(e) => setQty(Math.max(1, Math.min(stock || 1, Number(e.target.value) || 1)))}
                 className="w-24"
               />
-              <Button
-                disabled={stock <= 0 || addMutation.isPending}
-                onClick={() => addMutation.mutate()}
-              >
+              <Button disabled={stock <= 0 || addMutation.isPending} onClick={() => addMutation.mutate()}>
                 {addMutation.isPending ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
@@ -112,9 +104,7 @@ function BookDetailPage() {
             {book.description ? (
               <div className="mt-8">
                 <h2 className="font-display text-lg font-semibold">About this book</h2>
-                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-                  {book.description}
-                </p>
+                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{book.description}</p>
               </div>
             ) : null}
           </div>
