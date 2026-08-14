@@ -20,7 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { currency } from "@/lib/inventory";
-import { addToCart, fetchShopBooks, fetchShopCategories } from "@/lib/shop";
+import { fetchShopBooks, fetchShopCategories } from "@/lib/shop";
+import { addToCartClient } from "@/lib/guestCart";
 
 const PAGE_SIZE = 12;
 
@@ -56,7 +57,7 @@ function ShopPage() {
   });
 
   const addMutation = useMutation({
-    mutationFn: (bookId: string) => addToCart(bookId, 1),
+    mutationFn: (bookId: string) => addToCartClient(bookId, 1),
     onSuccess: () => {
       toast.success("Added to cart");
       queryClient.invalidateQueries({ queryKey: ["cart"] });
