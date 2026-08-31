@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { currency } from "@/lib/inventory";
 import { fetchCart, placeOrder } from "@/lib/shop";
+import { supabase } from "@/integrations/supabase/client";
 
 const TAX_RATE = 7.5;
 
@@ -31,6 +32,13 @@ export const Route = createFileRoute("/_shop/checkout")({
 function CheckoutPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const userQuery = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getUser();
+      return data.user;
+    },
+  });
   const cartQuery = useQuery({ queryKey: ["cart"], queryFn: fetchCart });
 
   const [address, setAddress] = useState("");
@@ -84,6 +92,48 @@ function CheckoutPage() {
             </Button>
           </div>
         </div>
+      </ShopShell>
+    );
+  }
+
+  if (userQuery.isLoading) {
+    return (
+      <ShopShell>
+        <Skeleton className="h-72 rounded-xl" />
+      </ShopShell>
+    );
+  }
+
+  if (!userQuery.data) {
+    return (
+      <ShopShell>
+        <h1 className="font-display text-2xl font-semibold">Checkout</h1>
+        {cartQuery.isLoading ? (
+          <Skeleton className="mt-6 h-72 rounded-xl" />
+        ) : rows.length === 0 ? (
+          <div className="mt-10 rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
+            Your cart is empty. <Link to="/shop" className="underline">Browse books</Link>
+          </div>
+        ) : (
+          <div className="mx-auto mt-8 max-w-lg card-elevated p-6 text-center">
+            <h2 className="font-display text-xl font-semibold">Sign in to complete your order</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your {rows.reduce((sum, row) => sum + row.quantity, 0)} cart items will be saved to your account after you sign in.
+            </p>
+            <p className="mt-4 font-display text-2xl font-semibold">{currency(total)}</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <Button size="lg" asChild>
+                <Link to="/auth" search={{ mode: "login" }}>Sign in</Link>
+              </Button>
+              <Button size="lg" variant="secondary" asChild>
+                <Link to="/auth" search={{ mode: "register" }}>Create account</Link>
+              </Button>
+            </div>
+            <Button variant="link" className="mt-3" asChild>
+              <Link to="/cart">Back to cart</Link>
+            </Button>
+          </div>
+        )}
       </ShopShell>
     );
   }

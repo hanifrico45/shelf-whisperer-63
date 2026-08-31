@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Package } from "lucide-react";
 
@@ -8,8 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currency } from "@/lib/inventory";
 import { fetchMyOrders, ORDER_STATUS_LABEL } from "@/lib/shop";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_shop/orders")({
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) throw redirect({ to: "/auth" });
+  },
   head: () => ({
     meta: [
       { title: "My orders — Bookshelf Store" },
