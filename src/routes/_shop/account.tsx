@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_shop/account")({
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth" });
+    if (!data.user) throw redirect({ to: "/auth", search: { mode: "login", next: "/account" } });
   },
   head: () => ({
     meta: [
@@ -53,7 +53,6 @@ function AccountPage() {
   return (
     <ShopShell>
       <h1 className="font-display text-2xl font-semibold">My profile</h1>
-
       {profileQuery.isLoading ? (
         <Skeleton className="mt-6 h-64 max-w-lg rounded-xl" />
       ) : (
@@ -64,30 +63,14 @@ function AccountPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="full-name">Full name</Label>
-            <Input
-              id="full-name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your name"
-            />
+            <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="profile-phone">Phone</Label>
-            <Input
-              id="profile-phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="e.g. 0803 000 1234"
-            />
+            <Input id="profile-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 0803 000 1234" />
           </div>
           <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" /> Saving…
-              </>
-            ) : (
-              "Save changes"
-            )}
+            {saveMutation.isPending ? (<><Loader2 className="size-4 animate-spin" /> Saving…</>) : "Save changes"}
           </Button>
         </div>
       )}

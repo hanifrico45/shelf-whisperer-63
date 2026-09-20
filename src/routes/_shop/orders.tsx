@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_shop/orders")({
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth" });
+    if (!data.user) throw redirect({ to: "/auth", search: { mode: "login", next: "/orders" } });
   },
   head: () => ({
     meta: [
@@ -33,7 +33,6 @@ function OrdersPage() {
   return (
     <ShopShell>
       <h1 className="font-display text-2xl font-semibold">My orders</h1>
-
       {ordersQuery.isLoading ? (
         <div className="mt-6 space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -55,31 +54,23 @@ function OrdersPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="font-medium">{order.order_number}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(order.created_at).toLocaleString()}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant={order.status === "delivered" ? "default" : "secondary"}>
                     {ORDER_STATUS_LABEL[order.status] ?? order.status}
                   </Badge>
-                  <span className="font-display text-lg font-semibold">
-                    {currency(Number(order.total))}
-                  </span>
+                  <span className="font-display text-lg font-semibold">{currency(Number(order.total))}</span>
                 </div>
               </div>
-
               <div className="mt-4 space-y-1 border-t border-border pt-3 text-sm">
                 {(order.sales?.sale_items ?? []).map((item) => (
                   <div key={item.id} className="flex justify-between gap-3">
-                    <span className="min-w-0 truncate text-muted-foreground">
-                      {item.quantity} × {item.title}
-                    </span>
+                    <span className="min-w-0 truncate text-muted-foreground">{item.quantity} × {item.title}</span>
                     <span>{currency(Number(item.line_total))}</span>
                   </div>
                 ))}
               </div>
-
               <OrderTracker status={order.status} />
             </div>
           ))}
@@ -100,10 +91,7 @@ function OrderTracker({ status }: { status: string }) {
     <div className="mt-4 flex items-center gap-2">
       {STEPS.map((step, index) => (
         <div key={step} className="flex flex-1 flex-col gap-1">
-          <div
-            className={`h-1.5 rounded-full ${index <= current ? "bg-primary" : "bg-muted"}`}
-            aria-hidden
-          />
+          <div className={`h-1.5 rounded-full ${index <= current ? "bg-primary" : "bg-muted"}`} aria-hidden />
           <span className="text-[10px] capitalize text-muted-foreground">{step}</span>
         </div>
       ))}
