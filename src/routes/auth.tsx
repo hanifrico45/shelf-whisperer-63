@@ -6,7 +6,6 @@ import { z } from "zod";
 import { BookOpen, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,9 +19,7 @@ import {
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError, logAuthEvent, waitForSession } from "@/lib/auth";
-import { resolveHomeRoute } from "@/lib/roles";
-
-
+import { resolveHomeRoute, sanitizeNext } from "@/lib/roles";
 
 const loginSchema = z.object({
   email: z.string().trim().email("Enter a valid email").max(255),
@@ -38,28 +35,29 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
     mode: search["mode"] === "register" ? "register" : "login",
+    next: typeof search["next"] === "string" ? search["next"] : undefined,
   }),
-  beforeLoad: async () => {
+  beforeLoad: async ({ search }) => {
     const { data } = await supabase.auth.getSession();
-    if (data.session) throw redirect({ to: await resolveHomeRoute() });
+    if (data.session) throw redirect({ to: await resolveHomeRoute(search.next) });
   },
-
   head: () => ({
     meta: [
-      { title: "Sign in — Bookshelf Inventory" },
-      { name: "description", content: "Sign in or create your Bookshelf staff account." },
-      { property: "og:title", content: "Sign in — Bookshelf Inventory" },
-      { property: "og:description", content: "Access your bookstore inventory workspace." },
+      { title: "Sign in — Bookshelf" },
+      { name: "description", content: "Sign in or create your Bookshelf account." },
+      { property: "og:title", content: "Sign in — Bookshelf" },
+      { property: "og:description", content: "Access your Bookshelf account." },
     ],
   }),
   component: AuthPage,
 });
 
 function AuthPage() {
-  const { mode } = Route.useSearch();
+  const { mode, next } = Route.useSearch();
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const safeNext = sanitizeNext(next);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -70,28 +68,23 @@ function AuthPage() {
     defaultValues: { email: "", password: "", fullName: "", phone: "" },
   });
 
-  // If a session lands on this page (restored session, magic link, OAuth return),
-  // move the user straight to their home surface instead of showing the login form again.
   useEffect(() => {
     let active = true;
     const go = async () => {
-      const to = await resolveHomeRoute();
+      const to = await resolveHomeRoute(safeNext);
       if (active) navigate({ to, replace: true });
     };
     void supabase.auth.getSession().then(({ data }) => {
       if (active && data.session) void go();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        void go();
-      }
+      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) void go();
     });
     return () => {
       active = false;
       sub.subscription.unsubscribe();
     };
-  }, [navigate]);
-
+  }, [navigate, safeNext]);
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
     setPending(true);
@@ -101,7 +94,6 @@ function AuthPage() {
         toast.error(friendlyAuthError(error));
         return;
       }
-      // Ensure the session is persisted before navigating so the guard doesn't bounce back.
       const session = await waitForSession();
       if (!session) {
         toast.error("Signed in, but the session could not be restored. Please try again.");
@@ -109,7 +101,7 @@ function AuthPage() {
       }
       void logAuthEvent("Login");
       toast.success("Welcome back");
-      navigate({ to: await resolveHomeRoute(), replace: true });
+      navigate({ to: await resolveHomeRoute(safeNext), replace: true });
     } catch (error) {
       toast.error(friendlyAuthError(error));
     } finally {
@@ -142,15 +134,13 @@ function AuthPage() {
         await supabase.from("profiles").update({ phone: values.phone }).eq("id", data.user.id);
       }
       void logAuthEvent("Login", values.email);
-      navigate({ to: await resolveHomeRoute(), replace: true });
+      navigate({ to: await resolveHomeRoute(safeNext), replace: true });
     } catch (error) {
       toast.error(friendlyAuthError(error));
     } finally {
       setPending(false);
     }
   }
-
-
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -161,16 +151,14 @@ function AuthPage() {
         </div>
         <div>
           <h2 className="max-w-md font-display text-4xl font-semibold leading-tight">
-            Inventory clarity for busy bookstores.
+            Your neighbourhood bookstore, online.
           </h2>
           <p className="mt-4 max-w-sm text-sm opacity-80">
-            Catalog, stock counts, suppliers, roles and audit history — one secure workspace for
-            your whole team.
+            Browse real titles, add them to your cart, and check out when you are ready.
           </p>
         </div>
-        <p className="text-xs opacity-70">Phase 1 · Foundation release</p>
+        <p className="text-xs opacity-70">Bookshelf Store</p>
       </div>
-
       <div className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
@@ -181,65 +169,45 @@ function AuthPage() {
               <span className="font-display text-lg font-semibold">Bookshelf</span>
             </div>
           </div>
-
           {emailSent ? (
             <div className="card-elevated p-6 text-center">
               <h2 className="font-display text-xl font-semibold">Confirm your email</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                We sent a confirmation link to your inbox. Click it to activate your account, then
-                sign in.
+                We sent a confirmation link to your inbox. Click it to activate your account, then sign in.
               </p>
-              <Button className="mt-5 w-full" onClick={() => setEmailSent(false)}>
-                Back to sign in
-              </Button>
+              <Button className="mt-5 w-full" onClick={() => setEmailSent(false)}>Back to sign in</Button>
             </div>
           ) : (
             <Tabs defaultValue={mode}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign in</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsTrigger value="register">Create account</TabsTrigger>
               </TabsList>
-
               <TabsContent value="login" className="mt-6">
                 <h1 className="font-display text-2xl font-semibold">Welcome back</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Sign in to manage your inventory.
+                  {safeNext === "/checkout"
+                    ? "Sign in to complete your order. Your cart will be waiting."
+                    : "Sign in to your Bookshelf account."}
                 </p>
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLogin)} className="mt-6 space-y-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="you@bookstore.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormField control={loginForm.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl><Input type="email" placeholder="you@email.com" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={loginForm.control} name="password" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                     <div className="text-right">
-                      <Link
-                        to="/forgot-password"
-                        className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                      >
-                        Forgot password?
-                      </Link>
+                      <Link to="/forgot-password" className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
                     </div>
                     <Button type="submit" className="w-full" disabled={pending}>
                       {pending ? <Loader2 className="size-4 animate-spin" /> : "Sign in"}
@@ -247,66 +215,41 @@ function AuthPage() {
                   </form>
                 </Form>
               </TabsContent>
-
               <TabsContent value="register" className="mt-6">
                 <h1 className="font-display text-2xl font-semibold">Create your account</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  The first account created becomes the store Owner.
+                  New accounts are customer accounts. Your cart is saved after you sign in.
                 </p>
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegister)} className="mt-6 space-y-4">
-                    <FormField
-                      control={registerForm.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ada Okoro" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone number</FormLabel>
-                          <FormControl>
-                            <Input type="tel" placeholder="e.g. 0803 000 1234" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="you@bookstore.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="At least 6 characters" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormField control={registerForm.control} name="fullName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full name</FormLabel>
+                        <FormControl><Input placeholder="Ada Okoro" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={registerForm.control} name="phone" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone number</FormLabel>
+                        <FormControl><Input type="tel" placeholder="e.g. 0803 000 1234" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={registerForm.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl><Input type="email" placeholder="you@email.com" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={registerForm.control} name="password" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl><Input type="password" placeholder="At least 6 characters" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                     <Button type="submit" className="w-full" disabled={pending}>
                       {pending ? <Loader2 className="size-4 animate-spin" /> : "Create account"}
                     </Button>
