@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
-import { BookOpen, LogOut, Moon, ShoppingCart, Sun, User, Package } from "lucide-react";
+import { BookOpen, LayoutDashboard, LogOut, Moon, ShoppingCart, Sun, User, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useTheme } from "@/lib/theme";
 import { logAuthEvent } from "@/lib/auth";
 import { fetchCart, mergeGuestCart } from "@/lib/shop";
 import { getGuestCartCount } from "@/lib/guest-cart";
+import { fetchMyRoles, isStaffRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
 export function ShopShell({ children }: { children: ReactNode }) {
@@ -18,7 +19,6 @@ export function ShopShell({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  // Get current user
   const userQuery = useQuery({
     queryKey: ["current-user"],
     queryFn: async () => {
@@ -27,23 +27,29 @@ export function ShopShell({ children }: { children: ReactNode }) {
     },
   });
 
+  const rolesQuery = useQuery({
+    queryKey: ["my-roles", userQuery.data?.id],
+    enabled: !!userQuery.data,
+    queryFn: fetchMyRoles,
+  });
+
   const isAuthenticated = !!userQuery.data;
   const user = userQuery.data;
+  const isAdmin = isStaffRole(rolesQuery.data ?? []);
 
   const cartQuery = useQuery({
     queryKey: ["cart"],
     queryFn: fetchCart,
   });
 
-  // For guests, use localStorage cart count; for authenticated, use database
   const cartCount = isAuthenticated
     ? (cartQuery.data ?? []).reduce((sum, r) => sum + r.quantity, 0)
     : getGuestCartCount();
 
-  // Subscribe to auth state changes
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      queryClient.invalidateQueries({ queryKey: ["my-roles"] });
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       queryClient.invalidateQueries();
@@ -53,16 +59,12 @@ export function ShopShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user?.id) return;
-
     void mergeGuestCart().then((merged) => {
       if (merged) void queryClient.invalidateQueries({ queryKey: ["cart"] });
     });
   }, [queryClient, user?.id]);
 
-  // Subscribe to cart changes
   useEffect(() => {
-    if (!isAuthenticated) return;
-
     const channel = supabase
       .channel("storefront-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "cart_items" }, () => {
@@ -82,7 +84,7 @@ export function ShopShell({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient, isAuthenticated]);
+  }, [queryClient]);
 
   async function handleSignOut() {
     await logAuthEvent("Logout");
@@ -92,11 +94,10 @@ export function ShopShell({ children }: { children: ReactNode }) {
     navigate({ to: "/shop", replace: true });
   }
 
-  // Navigation items (shown only for authenticated users)
-  const authNav = [
-    { to: "/shop", label: "Browse", icon: BookOpen },
+  const customerNav = [
+    { to: "/shop", label: "Shop", icon: BookOpen },
     { to: "/orders", label: "Orders", icon: Package },
-    { to: "/account", label: "Profile", icon: User },
+    { to: "/account", label: "Account", icon: User },
   ] as const;
 
   return (
@@ -110,9 +111,18 @@ export function ShopShell({ children }: { children: ReactNode }) {
             <span className="font-display text-lg font-semibold">Bookshelf</span>
           </Link>
 
-          {isAuthenticated && (
-            <nav className="ml-4 hidden items-center gap-1 sm:flex">
-              {authNav.map((item) => (
+          <nav className="ml-4 hidden items-center gap-1 sm:flex">
+            <Link
+              to="/shop"
+              className={cn(
+                "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+                pathname.startsWith("/shop") && "bg-secondary text-foreground",
+              )}
+            >
+              Shop
+            </Link>
+            {isAuthenticated &&
+              customerNav.slice(1).map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -124,15 +134,13 @@ export function ShopShell({ children }: { children: ReactNode }) {
                   {item.label}
                 </Link>
               ))}
-            </nav>
-          )}
+          </nav>
 
           <div className="ml-auto flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
 
-            {/* Cart button - always available */}
             <Button variant="ghost" size="icon" asChild aria-label="Cart">
               <Link to="/cart" className="relative">
                 <ShoppingCart className="size-4" />
@@ -144,11 +152,12 @@ export function ShopShell({ children }: { children: ReactNode }) {
               </Link>
             </Button>
 
-            {/* Sign in/up buttons for guests */}
             {!isAuthenticated && (
               <>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/auth">Sign in</Link>
+                  <Link to="/auth" search={{ mode: "login" }}>
+                    Sign in
+                  </Link>
                 </Button>
                 <Button size="sm" asChild>
                   <Link to="/auth" search={{ mode: "register" }}>
@@ -158,7 +167,15 @@ export function ShopShell({ children }: { children: ReactNode }) {
               </>
             )}
 
-            {/* Sign out button for authenticated users */}
+            {isAuthenticated && isAdmin && (
+              <Button size="sm" asChild>
+                <Link to="/dashboard">
+                  <LayoutDashboard className="size-4" />
+                  Admin Dashboard
+                </Link>
+              </Button>
+            )}
+
             {isAuthenticated && (
               <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
                 <LogOut className="size-4" />
@@ -167,10 +184,19 @@ export function ShopShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Mobile navigation - only for authenticated users */}
-        {isAuthenticated && (
-          <nav className="flex items-center gap-1 border-t border-border px-4 py-2 sm:hidden">
-            {authNav.map((item) => (
+        <nav className="flex items-center gap-1 border-t border-border px-4 py-2 sm:hidden">
+          <Link
+            to="/shop"
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground",
+              pathname.startsWith("/shop") && "bg-secondary text-foreground",
+            )}
+          >
+            <BookOpen className="size-3.5" />
+            Shop
+          </Link>
+          {isAuthenticated &&
+            customerNav.slice(1).map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -183,8 +209,7 @@ export function ShopShell({ children }: { children: ReactNode }) {
                 {item.label}
               </Link>
             ))}
-          </nav>
-        )}
+        </nav>
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
