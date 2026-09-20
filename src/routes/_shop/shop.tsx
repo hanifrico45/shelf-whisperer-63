@@ -44,7 +44,7 @@ function ShopPage() {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("all");
   const [sort, setSort] = useState<"title" | "price_asc" | "price_desc">("title");
-  const [inStockOnly, setInStockOnly] = useState(true);
+  const [inStockOnly, setInStockOnly] = useState(false);
   const [page, setPage] = useState(0);
 
   const categoriesQuery = useQuery({ queryKey: ["shop-categories"], queryFn: fetchShopCategories });
@@ -120,71 +120,89 @@ function ShopPage() {
           </SelectContent>
         </Select>
         <div className="flex items-center gap-2">
-          <Switch id="in-stock" checked={inStockOnly} onCheckedChange={setInStockOnly} />
+          <Switch
+            id="in-stock"
+            checked={inStockOnly}
+            onCheckedChange={(checked) => {
+              setInStockOnly(checked);
+              setPage(0);
+            }}
+          />
           <Label htmlFor="in-stock" className="text-sm text-muted-foreground">
             In stock
           </Label>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {booksQuery.isLoading
-          ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)
-          : rows.map((book) => {
-              const stock = book.inventory?.quantity ?? 0;
-              return (
-                <div key={book.id} className="card-elevated flex flex-col overflow-hidden">
-                  <Link
-                    to="/shop/$bookId"
-                    params={{ bookId: book.id }}
-                    className="block bg-muted/40 p-4"
-                  >
-                    <CoverImage
-                      path={book.cover_url}
-                      alt={book.title}
-                      className="mx-auto aspect-[2/3] w-28"
-                    />
-                  </Link>
-                  <div className="flex flex-1 flex-col gap-1 p-4 pt-0">
+      {booksQuery.isError ? (
+        <div className="mt-10 rounded-xl border border-dashed border-destructive/40 py-16 text-center text-sm text-destructive">
+          Could not load books from inventory. Please refresh and try again.
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {booksQuery.isLoading
+            ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)
+            : rows.map((book) => {
+                const stock = book.inventory?.quantity ?? 0;
+                return (
+                  <div key={book.id} className="card-elevated flex flex-col overflow-hidden">
                     <Link
                       to="/shop/$bookId"
                       params={{ bookId: book.id }}
-                      className="line-clamp-2 font-medium hover:underline"
+                      className="block bg-muted/40 p-4"
                     >
-                      {book.title}
+                      <CoverImage
+                        path={book.cover_url}
+                        alt={book.title}
+                        className="mx-auto aspect-[2/3] w-28"
+                      />
                     </Link>
-                    <p className="text-xs text-muted-foreground">{book.author}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="font-display text-lg font-semibold">
-                        {currency(Number(book.selling_price))}
-                      </span>
-                      {stock > 0 ? (
-                        <Badge variant="secondary">{stock} in stock</Badge>
-                      ) : (
-                        <Badge variant="outline">Sold out</Badge>
-                      )}
+                    <div className="flex flex-1 flex-col gap-1 p-4 pt-0">
+                      <Link
+                        to="/shop/$bookId"
+                        params={{ bookId: book.id }}
+                        className="line-clamp-2 font-medium hover:underline"
+                      >
+                        {book.title}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">{book.author}</p>
+                      {book.categories?.name ? (
+                        <p className="text-xs text-muted-foreground">{book.categories.name}</p>
+                      ) : null}
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="font-display text-lg font-semibold">
+                          {currency(Number(book.selling_price))}
+                        </span>
+                        {stock > 0 ? (
+                          <Badge variant="secondary">In Stock</Badge>
+                        ) : (
+                          <Badge variant="outline">Out of Stock</Badge>
+                        )}
+                      </div>
+                      <Button
+                        className="mt-3 w-full"
+                        size="sm"
+                        disabled={stock <= 0 || addMutation.isPending}
+                        onClick={() => addMutation.mutate(book.id)}
+                      >
+                        {addMutation.isPending ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : stock <= 0 ? (
+                          "Out of Stock"
+                        ) : (
+                          <>
+                            <ShoppingCart className="size-4" /> Add to Cart
+                          </>
+                        )}
+                      </Button>
                     </div>
-                    <Button
-                      className="mt-3 w-full"
-                      size="sm"
-                      disabled={stock <= 0 || addMutation.isPending}
-                      onClick={() => addMutation.mutate(book.id)}
-                    >
-                      {addMutation.isPending ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <>
-                          <ShoppingCart className="size-4" /> Add to cart
-                        </>
-                      )}
-                    </Button>
                   </div>
-                </div>
-              );
-            })}
-      </div>
+                );
+              })}
+        </div>
+      )}
 
-      {!booksQuery.isLoading && rows.length === 0 ? (
+      {!booksQuery.isLoading && !booksQuery.isError && rows.length === 0 ? (
         <div className="mt-10 rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
           No books match your search yet.
         </div>
