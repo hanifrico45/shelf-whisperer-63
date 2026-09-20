@@ -11,6 +11,7 @@ import {
   LogOut,
   ScanLine,
   ReceiptText,
+  Store,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -43,7 +44,6 @@ const items = [
   { title: "Team", url: "/team", icon: Users },
 ] as const;
 
-
 function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -75,6 +75,14 @@ function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/shop")} tooltip="View shop">
+                  <Link to="/shop" className="flex items-center gap-2">
+                    <Store className="size-4" />
+                    <span>View shop</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -106,9 +114,8 @@ export function AppShell({
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/shop", replace: true });
   }
-
 
   return (
     <SidebarProvider>
