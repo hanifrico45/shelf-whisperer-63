@@ -57,6 +57,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const safeNext = sanitizeNext(next);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
@@ -88,22 +89,29 @@ function AuthPage() {
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
     setPending(true);
+    setFormError(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword(values);
+      const { data, error } = await supabase.auth.signInWithPassword(values);
       if (error) {
-        toast.error(friendlyAuthError(error));
+        const message = friendlyAuthError(error);
+        setFormError(message);
+        toast.error(message);
         return;
       }
-      const session = await waitForSession();
+      const session = await waitForSession(4000, data.session);
       if (!session) {
-        toast.error("Signed in, but the session could not be restored. Please try again.");
+        const message = "Signed in, but the session could not be restored. Please try again.";
+        setFormError(message);
+        toast.error(message);
         return;
       }
       void logAuthEvent("Login");
       toast.success("Welcome back");
       navigate({ to: await resolveHomeRoute(safeNext), replace: true });
     } catch (error) {
-      toast.error(friendlyAuthError(error));
+      const message = friendlyAuthError(error);
+      setFormError(message);
+      toast.error(message);
     } finally {
       setPending(false);
     }
@@ -111,6 +119,7 @@ function AuthPage() {
 
   async function onRegister(values: z.infer<typeof registerSchema>) {
     setPending(true);
+    setFormError(null);
     try {
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
@@ -121,7 +130,9 @@ function AuthPage() {
         },
       });
       if (error) {
-        toast.error(friendlyAuthError(error));
+        const message = friendlyAuthError(error);
+        setFormError(message);
+        toast.error(message);
         return;
       }
       if (!data.session) {
@@ -129,14 +140,16 @@ function AuthPage() {
         toast.success("Check your email to confirm your account");
         return;
       }
-      await waitForSession();
+      await waitForSession(4000, data.session);
       if (data.user) {
         await supabase.from("profiles").update({ phone: values.phone }).eq("id", data.user.id);
       }
       void logAuthEvent("Login", values.email);
       navigate({ to: await resolveHomeRoute(safeNext), replace: true });
     } catch (error) {
-      toast.error(friendlyAuthError(error));
+      const message = friendlyAuthError(error);
+      setFormError(message);
+      toast.error(message);
     } finally {
       setPending(false);
     }
@@ -195,17 +208,18 @@ function AuthPage() {
                     <FormField control={loginForm.control} name="email" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Email</FormLabel>
-                        <FormControl><Input type="email" placeholder="you@email.com" {...field} /></FormControl>
+                        <FormControl><Input type="email" placeholder="you@email.com" autoComplete="email" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={loginForm.control} name="password" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Password</FormLabel>
-                        <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                        <FormControl><Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
+                    {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
                     <div className="text-right">
                       <Link to="/forgot-password" className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
                     </div>
@@ -239,17 +253,18 @@ function AuthPage() {
                     <FormField control={registerForm.control} name="email" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Email</FormLabel>
-                        <FormControl><Input type="email" placeholder="you@email.com" {...field} /></FormControl>
+                        <FormControl><Input type="email" placeholder="you@email.com" autoComplete="email" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={registerForm.control} name="password" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Password</FormLabel>
-                        <FormControl><Input type="password" placeholder="At least 6 characters" {...field} /></FormControl>
+                        <FormControl><Input type="password" placeholder="At least 6 characters" autoComplete="new-password" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
+                    {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
                     <Button type="submit" className="w-full" disabled={pending}>
                       {pending ? <Loader2 className="size-4 animate-spin" /> : "Create account"}
                     </Button>
