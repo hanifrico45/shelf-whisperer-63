@@ -4,15 +4,25 @@ export type AppRole = "owner" | "customer";
 
 const SAFE_NEXT = new Set(["/checkout", "/cart", "/shop", "/orders", "/account", "/dashboard"]);
 
+async function currentUserId() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData.session?.user?.id) return sessionData.session.user.id;
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
 /** Roles for the signed-in user. Returns [] when signed out. */
 export async function fetchMyRoles(): Promise<AppRole[]> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return [];
+  const userId = await currentUserId();
+  if (!userId) return [];
   const { data, error } = await supabase
     .from("user_roles")
     .select("role")
-    .eq("user_id", auth.user.id);
-  if (error) return [];
+    .eq("user_id", userId);
+  if (error) {
+    console.warn("[roles] failed to load user_roles", error.message);
+    return [];
+  }
   return (data ?? []).map((r) => r.role as AppRole);
 }
 

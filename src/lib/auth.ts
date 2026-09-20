@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
 /**
  * Records authentication events (login / logout) into the shared audit trail.
@@ -22,7 +23,8 @@ export async function logAuthEvent(action: "Login" | "Logout", label?: string | 
 }
 
 /** Waits until the persisted Supabase session is readable, so redirects never race. */
-export async function waitForSession(timeoutMs = 4000) {
+export async function waitForSession(timeoutMs = 4000, existing?: Session | null) {
+  if (existing) return existing;
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     const { data } = await supabase.auth.getSession();
