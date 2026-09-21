@@ -358,7 +358,8 @@ export interface OrderRow {
 export async function fetchMyOrders() {
   const user = await getCurrentUser();
   if (!user) return [];
-  const { data, error } = await supabase
+
+  const withItems = await supabase
     .from("orders")
     .select(
       "id,order_number,status,subtotal,tax_amount,total,payment_method,shipping_address,contact_phone,created_at," +
@@ -367,8 +368,21 @@ export async function fetchMyOrders() {
     .eq("customer_id", user.id)
     .order("created_at", { ascending: false })
     .returns<OrderRow[]>();
-  if (error) throw error;
-  return data ?? [];
+
+  if (!withItems.error) return withItems.data ?? [];
+
+  const plain = await supabase
+    .from("orders")
+    .select("id,order_number,status,subtotal,tax_amount,total,payment_method,shipping_address,contact_phone,created_at")
+    .eq("customer_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (plain.error) {
+    console.warn("[orders] fetch failed", plain.error.message);
+    return [];
+  }
+
+  return (plain.data ?? []).map((row) => ({ ...row, sales: null })) as OrderRow[];
 }
 
 export async function placeOrder(input: {
