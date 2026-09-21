@@ -22,6 +22,7 @@ export function ShopShell({ children }: { children: ReactNode }) {
   const userQuery = useQuery({
     queryKey: ["current-user"],
     queryFn: getCurrentUser,
+    staleTime: 30_000,
   });
 
   const rolesQuery = useQuery({
@@ -44,20 +45,32 @@ export function ShopShell({ children }: { children: ReactNode }) {
     : getGuestCartCount();
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
-      queryClient.invalidateQueries({ queryKey: ["current-user"] });
-      queryClient.invalidateQueries({ queryKey: ["my-roles"] });
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        queryClient.setQueryData(["current-user"], null);
+        queryClient.removeQueries({ queryKey: ["my-roles"] });
+        queryClient.removeQueries({ queryKey: ["my-profile"] });
+        queryClient.invalidateQueries({ queryKey: ["cart"] });
+        return;
+      }
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        if (session?.user) queryClient.setQueryData(["current-user"], session.user);
+        queryClient.invalidateQueries({ queryKey: ["cart"] });
+        queryClient.invalidateQueries({ queryKey: ["my-roles"] });
+      }
     });
     return () => data.subscription.unsubscribe();
   }, [queryClient]);
 
   useEffect(() => {
     if (!user?.id) return;
-    void mergeGuestCart().then((merged) => {
-      if (merged) void queryClient.invalidateQueries({ queryKey: ["cart"] });
-    });
+    void mergeGuestCart()
+      .then((merged) => {
+        if (merged) void queryClient.invalidateQueries({ queryKey: ["cart"] });
+      })
+      .catch((error) => {
+        console.warn("[shop] guest cart merge failed", error);
+      });
   }, [queryClient, user?.id]);
 
   useEffect(() => {
