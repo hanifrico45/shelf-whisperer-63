@@ -151,7 +151,10 @@ export async function fetchCart() {
       .eq("user_id", user.id)
       .order("created_at")
       .returns<CartRow[]>();
-    if (error) throw error;
+    if (error) {
+      console.warn("[cart] authenticated fetch failed", error.message);
+      return [];
+    }
     return data ?? [];
   }
 
@@ -258,36 +261,44 @@ export async function removeCartItem(cartItemId: string) {
 }
 
 export async function mergeGuestCart(): Promise<boolean> {
-  const guestItems = getGuestCart();
-  if (guestItems.length === 0) return false;
+  try {
+    const guestItems = getGuestCart();
+    if (guestItems.length === 0) return false;
 
-  const user = await getCurrentUser();
-  if (!user) return false;
+    const user = await getCurrentUser();
+    if (!user) return false;
 
-  const { data: existing, error: existingError } = await supabase
-    .from("cart_items")
-    .select("book_id,quantity")
-    .eq("user_id", user.id);
-  if (existingError) throw existingError;
+    const { data: existing } = await supabase
+      .from("cart_items")
+      .select("id,book_id,quantity")
+      .eq("user_id", user.id);
+    const existingByBook = new Map((existing ?? []).map((item) => [item.book_id, item]));
+    const stocks = await loadInventoryMap(guestItems.map((item) => item.bookId));
 
-  const existingQuantities = new Map((existing ?? []).map((item) => [item.book_id, item.quantity]));
-  const stocks = await loadInventoryMap(guestItems.map((item) => item.bookId));
-  const rows = guestItems.map((item) => {
-    const stock = stocks.get(item.bookId) ?? 0;
-    const merged = (existingQuantities.get(item.bookId) ?? 0) + item.quantity;
-    return {
-      user_id: user.id,
-      book_id: item.bookId,
-      quantity: Math.max(1, Math.min(merged, Math.max(stock, 1))),
-    };
-  }).filter((row) => (stocks.get(row.book_id) ?? 0) > 0);
-  if (rows.length > 0) {
-    const { error } = await supabase.from("cart_items").upsert(rows, { onConflict: "user_id,book_id" });
-    if (error) throw error;
+    for (const item of guestItems) {
+      const stock = stocks.get(item.bookId) ?? 0;
+      if (stock <= 0) continue;
+      const already = existingByBook.get(item.bookId);
+      const quantity = Math.min(stock, (already?.quantity ?? 0) + item.quantity);
+      if (already) {
+        const { error } = await supabase.from("cart_items").update({ quantity }).eq("id", already.id);
+        if (error) console.warn("[cart] merge update failed", error.message);
+      } else {
+        const { error } = await supabase.from("cart_items").insert({
+          user_id: user.id,
+          book_id: item.bookId,
+          quantity,
+        });
+        if (error) console.warn("[cart] merge insert failed", error.message);
+      }
+    }
+
+    clearGuestCart();
+    return true;
+  } catch (error) {
+    console.warn("[cart] mergeGuestCart failed", error);
+    return false;
   }
-
-  clearGuestCart();
-  return true;
 }
 
 export interface ProfileRow {
@@ -305,7 +316,15 @@ export async function fetchMyProfile(): Promise<ProfileRow | null> {
     .select("id,email,full_name,phone")
     .eq("id", user.id)
     .maybeSingle();
-  if (error) throw error;
+  if (error) {
+    console.warn("[profile] fetch failed", error.message);
+    return {
+      id: user.id,
+      email: user.email ?? null,
+      full_name: null,
+      phone: null,
+    };
+  }
   return data;
 }
 
