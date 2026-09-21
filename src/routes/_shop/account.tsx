@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchMyProfile, updateMyProfile } from "@/lib/shop";
-import { getCurrentUser } from "@/lib/auth";
+import { currentUserQuery } from "@/lib/auth";
 
 export const Route = createFileRoute("/_shop/account")({
   ssr: false,
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_shop/account")({
 
 function AccountPage() {
   const queryClient = useQueryClient();
-  const userQuery = useQuery({ queryKey: ["current-user"], queryFn: getCurrentUser });
+  const userQuery = useQuery(currentUserQuery);
   const profileQuery = useQuery({
     queryKey: ["my-profile"],
     queryFn: fetchMyProfile,
@@ -53,7 +53,7 @@ function AccountPage() {
   return (
     <ShopShell>
       <h1 className="font-display text-2xl font-semibold">My profile</h1>
-      {userQuery.isLoading ? (
+      {userQuery.isLoading && !userQuery.data ? (
         <Skeleton className="mt-6 h-64 max-w-lg rounded-xl" />
       ) : !userQuery.data ? (
         <div className="card-elevated mx-auto mt-8 max-w-lg p-6 text-center">

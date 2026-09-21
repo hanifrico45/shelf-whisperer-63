@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currency } from "@/lib/inventory";
 import { fetchMyOrders, ORDER_STATUS_LABEL } from "@/lib/shop";
-import { getCurrentUser } from "@/lib/auth";
+import { currentUserQuery } from "@/lib/auth";
 
 export const Route = createFileRoute("/_shop/orders")({
   ssr: false,
@@ -22,9 +22,9 @@ export const Route = createFileRoute("/_shop/orders")({
 });
 
 function OrdersPage() {
-  const userQuery = useQuery({ queryKey: ["current-user"], queryFn: getCurrentUser });
+  const userQuery = useQuery(currentUserQuery);
   const ordersQuery = useQuery({
-    queryKey: ["my-orders"],
+    queryKey: ["my-orders", userQuery.data?.id],
     queryFn: fetchMyOrders,
     enabled: !!userQuery.data,
   });
@@ -33,7 +33,7 @@ function OrdersPage() {
   return (
     <ShopShell>
       <h1 className="font-display text-2xl font-semibold">My orders</h1>
-      {userQuery.isLoading ? (
+      {userQuery.isLoading && !userQuery.data ? (
         <Skeleton className="mt-6 h-32 rounded-xl" />
       ) : !userQuery.data ? (
         <div className="card-elevated mx-auto mt-8 max-w-lg p-6 text-center">
@@ -47,6 +47,10 @@ function OrdersPage() {
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-32 rounded-xl" />
           ))}
+        </div>
+      ) : ordersQuery.isError ? (
+        <div className="mt-10 rounded-xl border border-dashed border-destructive/40 py-16 text-center text-sm text-destructive">
+          Could not load your orders. Refresh and try again.
         </div>
       ) : orders.length === 0 ? (
         <div className="mt-10 rounded-xl border border-dashed border-border py-16 text-center">

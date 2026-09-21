@@ -123,17 +123,16 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        queryClient.invalidateQueries({ queryKey: ["current-user"] });
-        queryClient.invalidateQueries({ queryKey: ["my-roles"] });
-        queryClient.invalidateQueries({ queryKey: ["my-profile"] });
-        queryClient.invalidateQueries({ queryKey: ["cart"] });
-      }
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
-        queryClient.removeQueries({ queryKey: ["current-user"] });
+        queryClient.setQueryData(["current-user"], null);
         queryClient.removeQueries({ queryKey: ["my-roles"] });
         queryClient.removeQueries({ queryKey: ["my-profile"] });
+        queryClient.removeQueries({ queryKey: ["my-orders"] });
+        return;
+      }
+      if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session?.user) {
+        queryClient.setQueryData(["current-user"], session.user);
       }
     });
     return () => data.subscription.unsubscribe();

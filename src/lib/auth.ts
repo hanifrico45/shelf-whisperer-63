@@ -1,6 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
+export const currentUserQuery = {
+  queryKey: ["current-user"] as const,
+  queryFn: getCurrentUser,
+  staleTime: 60_000,
+  refetchOnWindowFocus: false,
+  refetchOnMount: false,
+  refetchOnReconnect: false,
+};
+
 export async function getCurrentSession(): Promise<Session | null> {
   const { data } = await supabase.auth.getSession();
   return data.session ?? null;
