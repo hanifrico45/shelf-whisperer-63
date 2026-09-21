@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,7 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
-import { friendlyAuthError, logAuthEvent, waitForSession } from "@/lib/auth";
+import { friendlyAuthError, getCurrentUser, logAuthEvent, waitForSession } from "@/lib/auth";
 import { resolveHomeRoute, sanitizeNext } from "@/lib/roles";
 
 const loginSchema = z.object({
@@ -38,17 +39,13 @@ export const Route = createFileRoute("/auth")({
     next: typeof search["next"] === "string" ? search["next"] : undefined,
   }),
   beforeLoad: async ({ search }) => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session?.access_token && data.session.user) {
-      throw redirect({ to: await resolveHomeRoute(search.next) });
-    }
+    const user = await getCurrentUser();
+    if (user) throw redirect({ to: await resolveHomeRoute(search.next) });
   },
   head: () => ({
     meta: [
       { title: "Sign in — Bookshelf" },
       { name: "description", content: "Sign in or create your Bookshelf account." },
-      { property: "og:title", content: "Sign in — Bookshelf" },
-      { property: "og:description", content: "Access your Bookshelf account." },
     ],
   }),
   component: AuthPage,
@@ -57,6 +54,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { mode, next } = Route.useSearch();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -71,33 +69,23 @@ function AuthPage() {
     defaultValues: { email: "", password: "", fullName: "", phone: "" },
   });
 
-  useEffect(() => {
-    let active = true;
-    const go = async () => {
-      const to = await resolveHomeRoute(safeNext);
-      if (active) navigate({ to, replace: true });
-    };
-    void supabase.auth.getSession().then(({ data }) => {
-      if (active && data.session?.user && !pending) void go();
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (pending) return;
-      if (session?.user && event === "SIGNED_IN") void go();
-    });
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, [navigate, safeNext, pending]);
+  async function finishSignIn(user: { id: string } | null | undefined) {
+    if (user) queryClient.setQueryData(["current-user"], user);
+    await queryClient.invalidateQueries({ queryKey: ["cart"] });
+    await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    await queryClient.invalidateQueries({ queryKey: ["my-roles"] });
+    toast.success("Welcome back");
+    navigate({ to: await resolveHomeRoute(safeNext), replace: true });
+  }
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
     setPending(true);
     setFormError(null);
-    const email = values.email.trim().toLowerCase();
-    const password = values.password;
     try {
-      await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: values.email.trim().toLowerCase(),
+        password: values.password,
+      });
       if (error) {
         const message = friendlyAuthError(error);
         setFormError(message);
@@ -105,15 +93,14 @@ function AuthPage() {
         return;
       }
       const session = await waitForSession(4000, data.session);
-      if (!session) {
-        const message = "Signed in, but the session could not be restored. Please try again.";
+      if (!session?.user) {
+        const message = "Signed in, but your account could not be opened. Please try again.";
         setFormError(message);
         toast.error(message);
         return;
       }
       void logAuthEvent("Login");
-      toast.success("Welcome back");
-      navigate({ to: await resolveHomeRoute(safeNext), replace: true });
+      await finishSignIn(session.user);
     } catch (error) {
       const message = friendlyAuthError(error);
       setFormError(message);
@@ -143,15 +130,18 @@ function AuthPage() {
       }
       if (!data.session) {
         setEmailSent(true);
-        toast.success("Check your email to confirm your account");
+        toast.success("Check your email to confirm your account, then sign in.");
         return;
       }
-      await waitForSession(4000, data.session);
-      if (data.user) {
-        await supabase.from("profiles").update({ phone: values.phone }).eq("id", data.user.id);
+      const session = await waitForSession(4000, data.session);
+      if (session?.user) {
+        await supabase
+          .from("profiles")
+          .update({ full_name: values.fullName, phone: values.phone })
+          .eq("id", session.user.id);
       }
       void logAuthEvent("Login", values.email);
-      navigate({ to: await resolveHomeRoute(safeNext), replace: true });
+      await finishSignIn(session?.user ?? data.user);
     } catch (error) {
       const message = friendlyAuthError(error);
       setFormError(message);
@@ -173,26 +163,18 @@ function AuthPage() {
             Your neighbourhood bookstore, online.
           </h2>
           <p className="mt-4 max-w-sm text-sm opacity-80">
-            Browse real titles, add them to your cart, and check out when you are ready.
+            Browse freely. Sign in only when you want your account or checkout.
           </p>
         </div>
         <p className="text-xs opacity-70">Bookshelf Store</p>
       </div>
       <div className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="mb-8 lg:hidden">
-            <div className="flex items-center gap-2">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-gradient-brand text-primary-foreground">
-                <BookOpen className="size-5" />
-              </span>
-              <span className="font-display text-lg font-semibold">Bookshelf</span>
-            </div>
-          </div>
           {emailSent ? (
             <div className="card-elevated p-6 text-center">
               <h2 className="font-display text-xl font-semibold">Confirm your email</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                We sent a confirmation link to your inbox. Click it to activate your account, then sign in.
+                We sent a confirmation link. After you confirm, come back here and sign in.
               </p>
               <Button className="mt-5 w-full" onClick={() => setEmailSent(false)}>Back to sign in</Button>
             </div>
@@ -206,8 +188,8 @@ function AuthPage() {
                 <h1 className="font-display text-2xl font-semibold">Welcome back</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {safeNext === "/checkout"
-                    ? "Sign in to complete your order. Your cart will be waiting."
-                    : "You can sign in with an empty cart. Staff are taken to the admin dashboard."}
+                    ? "Sign in to finish checkout. Your cart stays with you."
+                    : "Sign in anytime. You do not need books in your cart."}
                 </p>
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLogin)} className="mt-6 space-y-4">
@@ -221,7 +203,7 @@ function AuthPage() {
                     <FormField control={loginForm.control} name="password" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Password</FormLabel>
-                        <FormControl><Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} /></FormControl>
+                        <FormControl><Input type="password" placeholder="Your password" autoComplete="current-password" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -238,21 +220,21 @@ function AuthPage() {
               <TabsContent value="register" className="mt-6">
                 <h1 className="font-display text-2xl font-semibold">Create your account</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  New accounts are customer accounts. You do not need items in your cart to create one.
+                  New customers can create an account first. We then take you back to checkout.
                 </p>
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegister)} className="mt-6 space-y-4">
                     <FormField control={registerForm.control} name="fullName" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Full name</FormLabel>
-                        <FormControl><Input placeholder="Ada Okoro" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Ada Okoro" autoComplete="name" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={registerForm.control} name="phone" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Phone number</FormLabel>
-                        <FormControl><Input type="tel" placeholder="e.g. 0803 000 1234" {...field} /></FormControl>
+                        <FormControl><Input type="tel" placeholder="e.g. 0803 000 1234" autoComplete="tel" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
