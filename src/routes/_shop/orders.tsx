@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currency } from "@/lib/inventory";
 import { fetchMyOrders, ORDER_STATUS_LABEL } from "@/lib/shop";
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/_shop/orders")({
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth", search: { mode: "login", next: "/orders" } });
+    const user = await getCurrentUser();
+    if (!user) throw redirect({ to: "/auth", search: { mode: "login", next: "/orders" } });
   },
   head: () => ({
     meta: [

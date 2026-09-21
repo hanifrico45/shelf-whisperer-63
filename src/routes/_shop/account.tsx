@@ -10,12 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchMyProfile, updateMyProfile } from "@/lib/shop";
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/_shop/account")({
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth", search: { mode: "login", next: "/account" } });
+    const user = await getCurrentUser();
+    if (!user) throw redirect({ to: "/auth", search: { mode: "login", next: "/account" } });
   },
   head: () => ({
     meta: [
