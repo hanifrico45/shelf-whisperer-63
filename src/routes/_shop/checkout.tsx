@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { currency } from "@/lib/inventory";
 import { fetchCart, placeOrder } from "@/lib/shop";
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/auth";
 
 const TAX_RATE = 7.5;
 
@@ -34,10 +34,7 @@ function CheckoutPage() {
   const queryClient = useQueryClient();
   const userQuery = useQuery({
     queryKey: ["current-user"],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getUser();
-      return data.user;
-    },
+    queryFn: getCurrentUser,
   });
   const cartQuery = useQuery({ queryKey: ["cart"], queryFn: fetchCart });
 
