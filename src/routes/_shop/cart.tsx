@@ -9,14 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currency } from "@/lib/inventory";
 import { fetchCart, removeCartItem, updateCartQuantity } from "@/lib/shop";
+import { getCurrentUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/_shop/cart")({
   head: () => ({
     meta: [
       { title: "Your cart — Bookshelf Store" },
       { name: "description", content: "Review the books in your cart before checking out." },
-      { property: "og:title", content: "Your cart — Bookshelf Store" },
-      { property: "og:description", content: "Review quantities and totals before checkout." },
     ],
   }),
   component: CartPage,
@@ -49,6 +48,15 @@ function CartPage() {
     (sum, r) => sum + Number(r.books?.selling_price ?? 0) * r.quantity,
     0,
   );
+
+  async function goCheckout() {
+    const user = await getCurrentUser();
+    if (!user) {
+      navigate({ to: "/auth", search: { mode: "login", next: "/checkout" } });
+      return;
+    }
+    navigate({ to: "/checkout" });
+  }
 
   return (
     <ShopShell>
@@ -143,7 +151,7 @@ function CartPage() {
               <span className="text-muted-foreground">Items</span>
               <span className="font-medium">{rows.reduce((s, r) => s + r.quantity, 0)}</span>
             </div>
-            <Button className="mt-5 w-full" onClick={() => navigate({ to: "/checkout" })}>
+            <Button className="mt-5 w-full" onClick={() => void goCheckout()}>
               Proceed to checkout
             </Button>
             <Button variant="ghost" className="mt-2 w-full" asChild>
