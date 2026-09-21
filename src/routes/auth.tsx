@@ -39,7 +39,9 @@ export const Route = createFileRoute("/auth")({
   }),
   beforeLoad: async ({ search }) => {
     const { data } = await supabase.auth.getSession();
-    if (data.session) throw redirect({ to: await resolveHomeRoute(search.next) });
+    if (data.session?.access_token && data.session.user) {
+      throw redirect({ to: await resolveHomeRoute(search.next) });
+    }
   },
   head: () => ({
     meta: [
@@ -76,22 +78,26 @@ function AuthPage() {
       if (active) navigate({ to, replace: true });
     };
     void supabase.auth.getSession().then(({ data }) => {
-      if (active && data.session) void go();
+      if (active && data.session?.user && !pending) void go();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) void go();
+      if (pending) return;
+      if (session?.user && event === "SIGNED_IN") void go();
     });
     return () => {
       active = false;
       sub.subscription.unsubscribe();
     };
-  }, [navigate, safeNext]);
+  }, [navigate, safeNext, pending]);
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
     setPending(true);
     setFormError(null);
+    const email = values.email.trim().toLowerCase();
+    const password = values.password;
     try {
-      const { data, error } = await supabase.auth.signInWithPassword(values);
+      await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         const message = friendlyAuthError(error);
         setFormError(message);
@@ -122,7 +128,7 @@ function AuthPage() {
     setFormError(null);
     try {
       const { data, error } = await supabase.auth.signUp({
-        email: values.email,
+        email: values.email.trim().toLowerCase(),
         password: values.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth`,
@@ -201,7 +207,7 @@ function AuthPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {safeNext === "/checkout"
                     ? "Sign in to complete your order. Your cart will be waiting."
-                    : "Sign in to your Bookshelf account."}
+                    : "You can sign in with an empty cart. Staff are taken to the admin dashboard."}
                 </p>
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLogin)} className="mt-6 space-y-4">
@@ -232,7 +238,7 @@ function AuthPage() {
               <TabsContent value="register" className="mt-6">
                 <h1 className="font-display text-2xl font-semibold">Create your account</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  New accounts are customer accounts. Your cart is saved after you sign in.
+                  New accounts are customer accounts. You do not need items in your cart to create one.
                 </p>
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegister)} className="mt-6 space-y-4">
