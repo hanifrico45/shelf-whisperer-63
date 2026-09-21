@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "./auth";
 import {
   getGuestCart,
   addToGuestCart,
@@ -141,13 +142,13 @@ export interface CartRow {
 }
 
 export async function fetchCart() {
-  const { data: auth } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
-  if (auth.user) {
+  if (user) {
     const { data, error } = await supabase
       .from("cart_items")
       .select("id,quantity,book_id,books(id,title,author,cover_url,selling_price,inventory(quantity))")
-      .eq("user_id", auth.user.id)
+      .eq("user_id", user.id)
       .order("created_at")
       .returns<CartRow[]>();
     if (error) throw error;
@@ -198,13 +199,13 @@ async function assertInStock(bookId: string, quantity: number) {
 
 export async function addToCart(bookId: string, quantity = 1) {
   await assertInStock(bookId, quantity);
-  const { data: auth } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
-  if (auth.user) {
+  if (user) {
     const { data: existing } = await supabase
       .from("cart_items")
       .select("id,quantity")
-      .eq("user_id", auth.user.id)
+      .eq("user_id", user.id)
       .eq("book_id", bookId)
       .maybeSingle();
 
@@ -218,7 +219,7 @@ export async function addToCart(bookId: string, quantity = 1) {
     }
     const { error } = await supabase
       .from("cart_items")
-      .insert({ user_id: auth.user.id, book_id: bookId, quantity });
+      .insert({ user_id: user.id, book_id: bookId, quantity });
     if (error) throw error;
     return;
   }
@@ -227,11 +228,11 @@ export async function addToCart(bookId: string, quantity = 1) {
 }
 
 export async function updateCartQuantity(cartItemId: string, quantity: number) {
-  const { data: auth } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (quantity <= 0) return removeCartItem(cartItemId);
 
-  if (auth.user) {
+  if (user) {
     const { error } = await supabase.from("cart_items").update({ quantity }).eq("id", cartItemId);
     if (error) throw error;
     return;
@@ -241,9 +242,9 @@ export async function updateCartQuantity(cartItemId: string, quantity: number) {
 }
 
 export async function removeCartItem(cartItemId: string) {
-  const { data: auth } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
-  if (auth.user) {
+  if (user) {
     const { error } = await supabase.from("cart_items").delete().eq("id", cartItemId);
     if (error) throw error;
     return;
@@ -256,18 +257,18 @@ export async function mergeGuestCart(): Promise<boolean> {
   const guestItems = getGuestCart();
   if (guestItems.length === 0) return false;
 
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return false;
+  const user = await getCurrentUser();
+  if (!user) return false;
 
   const { data: existing, error: existingError } = await supabase
     .from("cart_items")
     .select("book_id,quantity")
-    .eq("user_id", auth.user.id);
+    .eq("user_id", user.id);
   if (existingError) throw existingError;
 
   const existingQuantities = new Map((existing ?? []).map((item) => [item.book_id, item.quantity]));
   const rows = guestItems.map((item) => ({
-    user_id: auth.user.id,
+    user_id: user.id,
     book_id: item.bookId,
     quantity: (existingQuantities.get(item.bookId) ?? 0) + item.quantity,
   }));
@@ -286,24 +287,24 @@ export interface ProfileRow {
 }
 
 export async function fetchMyProfile(): Promise<ProfileRow | null> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
+  const user = await getCurrentUser();
+  if (!user) return null;
   const { data, error } = await supabase
     .from("profiles")
     .select("id,email,full_name,phone")
-    .eq("id", auth.user.id)
+    .eq("id", user.id)
     .maybeSingle();
   if (error) throw error;
   return data;
 }
 
 export async function updateMyProfile(input: { full_name: string; phone: string }) {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) throw new Error("You must be signed in.");
+  const user = await getCurrentUser();
+  if (!user) throw new Error("You must be signed in.");
   const { error } = await supabase
     .from("profiles")
     .update({ full_name: input.full_name, phone: input.phone })
-    .eq("id", auth.user.id);
+    .eq("id", user.id);
   if (error) throw error;
 }
 
@@ -325,15 +326,15 @@ export interface OrderRow {
 }
 
 export async function fetchMyOrders() {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return [];
+  const user = await getCurrentUser();
+  if (!user) return [];
   const { data, error } = await supabase
     .from("orders")
     .select(
       "id,order_number,status,subtotal,tax_amount,total,payment_method,shipping_address,contact_phone,created_at," +
         "sales(sale_number,sale_items(id,title,quantity,line_total))",
     )
-    .eq("customer_id", auth.user.id)
+    .eq("customer_id", user.id)
     .order("created_at", { ascending: false })
     .returns<OrderRow[]>();
   if (error) throw error;
