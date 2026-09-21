@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ImageIcon } from "lucide-react";
-import { signedCoverUrl } from "@/lib/inventory";
+import { publicCoverUrl, signedCoverUrl } from "@/lib/inventory";
 import { cn } from "@/lib/utils";
 
 export function CoverImage({
@@ -12,12 +12,16 @@ export function CoverImage({
   alt: string;
   className?: string;
 }) {
-  const [url, setUrl] = useState<string | null>(null);
+  const publicUrl = publicCoverUrl(path);
+  const [url, setUrl] = useState<string | null>(publicUrl);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let active = true;
-    signedCoverUrl(path).then((u) => {
-      if (active) setUrl(u);
+    setFailed(false);
+    setUrl(publicCoverUrl(path));
+    signedCoverUrl(path).then((signed) => {
+      if (active && signed) setUrl(signed);
     });
     return () => {
       active = false;
@@ -31,8 +35,20 @@ export function CoverImage({
         className,
       )}
     >
-      {url ? (
-        <img src={url} alt={alt} className="size-full object-cover" loading="lazy" />
+      {url && !failed ? (
+        <img
+          src={url}
+          alt={alt}
+          className="size-full object-cover"
+          loading="lazy"
+          onError={() => {
+            if (url && publicUrl && url !== publicUrl) {
+              setUrl(publicUrl);
+              return;
+            }
+            setFailed(true);
+          }}
+        />
       ) : (
         <ImageIcon className="size-4 text-muted-foreground" />
       )}

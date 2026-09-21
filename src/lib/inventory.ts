@@ -271,18 +271,40 @@ export async function deleteBook(book: BookRow) {
 
 }
 
+const COVER_BUCKET = "book-covers";
+
+function coverObjectPath(path: string) {
+  const trimmed = path.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return trimmed.replace(/^\/+/, "").replace(/^book-covers\//, "");
+}
+
+/** Public storefront URL. Works as soon as the book-covers bucket is public. */
+export function publicCoverUrl(path: string | null) {
+  if (!path) return null;
+  const cleaned = coverObjectPath(path);
+  if (/^https?:\/\//i.test(cleaned)) return cleaned;
+  const { data } = supabase.storage.from(COVER_BUCKET).getPublicUrl(cleaned);
+  return data.publicUrl;
+}
+
 export async function uploadCover(file: File) {
   const ext = file.name.split(".").pop() ?? "jpg";
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from("book-covers").upload(path, file, { upsert: true });
+  const { error } = await supabase.storage.from(COVER_BUCKET).upload(path, file, { upsert: true });
   if (error) throw error;
   return path;
 }
 
 export async function signedCoverUrl(path: string | null) {
   if (!path) return null;
-  const { data } = await supabase.storage.from("book-covers").createSignedUrl(path, 60 * 60);
-  return data?.signedUrl ?? null;
+  const cleaned = coverObjectPath(path);
+  if (/^https?:\/\//i.test(cleaned)) return cleaned;
+
+  const publicUrl = publicCoverUrl(cleaned);
+  const { data, error } = await supabase.storage.from(COVER_BUCKET).createSignedUrl(cleaned, 60 * 60 * 24);
+  if (!error && data?.signedUrl) return data.signedUrl;
+  return publicUrl;
 }
 
 export const currency = (value: number) =>
