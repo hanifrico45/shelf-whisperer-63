@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
@@ -203,7 +204,7 @@ function AuthPage() {
                     <FormField control={loginForm.control} name="password" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Password</FormLabel>
-                        <FormControl><Input type="password" placeholder="Your password" autoComplete="current-password" {...field} /></FormControl>
+                        <FormControl><PasswordInput placeholder="Your password" autoComplete="current-password" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -248,7 +249,7 @@ function AuthPage() {
                     <FormField control={registerForm.control} name="password" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Password</FormLabel>
-                        <FormControl><Input type="password" placeholder="At least 6 characters" autoComplete="new-password" {...field} /></FormControl>
+                        <FormControl><PasswordInput placeholder="At least 6 characters" autoComplete="new-password" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />

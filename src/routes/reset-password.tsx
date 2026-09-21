@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Form,
   FormControl,
@@ -34,8 +34,6 @@ export const Route = createFileRoute("/reset-password")({
     meta: [
       { title: "Set a new password — Bookshelf" },
       { name: "description", content: "Choose a new password for your Bookshelf account." },
-      { property: "og:title", content: "Set a new password — Bookshelf" },
-      { property: "og:description", content: "Choose a new password for your account." },
     ],
   }),
   component: ResetPassword,
@@ -93,7 +91,7 @@ function ResetPassword() {
                   <FormItem>
                     <FormLabel>New password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <PasswordInput placeholder="••••••••" autoComplete="new-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -106,7 +104,7 @@ function ResetPassword() {
                   <FormItem>
                     <FormLabel>Confirm password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <PasswordInput placeholder="••••••••" autoComplete="new-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
