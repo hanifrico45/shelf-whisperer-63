@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Package } from "lucide-react";
 
@@ -11,29 +11,38 @@ import { fetchMyOrders, ORDER_STATUS_LABEL } from "@/lib/shop";
 import { getCurrentUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/_shop/orders")({
-  beforeLoad: async () => {
-    const user = await getCurrentUser();
-    if (!user) throw redirect({ to: "/auth", search: { mode: "login", next: "/orders" } });
-  },
+  ssr: false,
   head: () => ({
     meta: [
       { title: "My orders — Bookshelf Store" },
       { name: "description", content: "Track the status of your Bookshelf book orders." },
-      { property: "og:title", content: "My orders — Bookshelf Store" },
-      { property: "og:description", content: "Order history and live delivery status." },
     ],
   }),
   component: OrdersPage,
 });
 
 function OrdersPage() {
-  const ordersQuery = useQuery({ queryKey: ["my-orders"], queryFn: fetchMyOrders });
+  const userQuery = useQuery({ queryKey: ["current-user"], queryFn: getCurrentUser });
+  const ordersQuery = useQuery({
+    queryKey: ["my-orders"],
+    queryFn: fetchMyOrders,
+    enabled: !!userQuery.data,
+  });
   const orders = ordersQuery.data ?? [];
 
   return (
     <ShopShell>
       <h1 className="font-display text-2xl font-semibold">My orders</h1>
-      {ordersQuery.isLoading ? (
+      {userQuery.isLoading ? (
+        <Skeleton className="mt-6 h-32 rounded-xl" />
+      ) : !userQuery.data ? (
+        <div className="card-elevated mx-auto mt-8 max-w-lg p-6 text-center">
+          <p className="text-sm text-muted-foreground">Sign in to see your orders.</p>
+          <Button className="mt-4" asChild>
+            <Link to="/auth" search={{ mode: "login", next: "/orders" }}>Sign in</Link>
+          </Button>
+        </div>
+      ) : ordersQuery.isLoading ? (
         <div className="mt-6 space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-32 rounded-xl" />

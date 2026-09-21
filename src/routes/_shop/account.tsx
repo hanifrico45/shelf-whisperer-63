@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -13,16 +13,11 @@ import { fetchMyProfile, updateMyProfile } from "@/lib/shop";
 import { getCurrentUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/_shop/account")({
-  beforeLoad: async () => {
-    const user = await getCurrentUser();
-    if (!user) throw redirect({ to: "/auth", search: { mode: "login", next: "/account" } });
-  },
+  ssr: false,
   head: () => ({
     meta: [
       { title: "My profile — Bookshelf Store" },
       { name: "description", content: "Manage your Bookshelf customer profile and contact details." },
-      { property: "og:title", content: "My profile — Bookshelf Store" },
-      { property: "og:description", content: "Update your name and contact information." },
     ],
   }),
   component: AccountPage,
@@ -30,7 +25,12 @@ export const Route = createFileRoute("/_shop/account")({
 
 function AccountPage() {
   const queryClient = useQueryClient();
-  const profileQuery = useQuery({ queryKey: ["my-profile"], queryFn: fetchMyProfile });
+  const userQuery = useQuery({ queryKey: ["current-user"], queryFn: getCurrentUser });
+  const profileQuery = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: fetchMyProfile,
+    enabled: !!userQuery.data,
+  });
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -53,13 +53,22 @@ function AccountPage() {
   return (
     <ShopShell>
       <h1 className="font-display text-2xl font-semibold">My profile</h1>
-      {profileQuery.isLoading ? (
+      {userQuery.isLoading ? (
+        <Skeleton className="mt-6 h-64 max-w-lg rounded-xl" />
+      ) : !userQuery.data ? (
+        <div className="card-elevated mx-auto mt-8 max-w-lg p-6 text-center">
+          <p className="text-sm text-muted-foreground">Sign in to see and edit your profile.</p>
+          <Button className="mt-4" asChild>
+            <Link to="/auth" search={{ mode: "login", next: "/account" }}>Sign in</Link>
+          </Button>
+        </div>
+      ) : profileQuery.isLoading ? (
         <Skeleton className="mt-6 h-64 max-w-lg rounded-xl" />
       ) : (
         <div className="card-elevated mt-6 max-w-lg space-y-4 p-5">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" value={profileQuery.data?.email ?? ""} disabled />
+            <Input id="email" value={profileQuery.data?.email ?? userQuery.data.email ?? ""} disabled />
           </div>
           <div className="space-y-2">
             <Label htmlFor="full-name">Full name</Label>
