@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/lib/theme";
-import { logAuthEvent } from "@/lib/auth";
+import { getCurrentUser, logAuthEvent } from "@/lib/auth";
 import { fetchCart, mergeGuestCart } from "@/lib/shop";
 import { getGuestCartCount } from "@/lib/guest-cart";
 import { fetchMyRoles, isStaffRole } from "@/lib/roles";
@@ -21,10 +21,7 @@ export function ShopShell({ children }: { children: ReactNode }) {
 
   const userQuery = useQuery({
     queryKey: ["current-user"],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getUser();
-      return data.user;
-    },
+    queryFn: getCurrentUser,
   });
 
   const rolesQuery = useQuery({
@@ -52,7 +49,6 @@ export function ShopShell({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["my-roles"] });
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       queryClient.invalidateQueries({ queryKey: ["cart"] });
-      queryClient.invalidateQueries();
     });
     return () => data.subscription.unsubscribe();
   }, [queryClient]);
