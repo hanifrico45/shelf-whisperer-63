@@ -121,21 +121,27 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const router = useRouter();
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        queryClient.invalidateQueries({ queryKey: ["current-user"] });
+        queryClient.invalidateQueries({ queryKey: ["my-roles"] });
+        queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+        queryClient.invalidateQueries({ queryKey: ["cart"] });
+      }
+      if (event === "SIGNED_OUT") {
+        queryClient.removeQueries({ queryKey: ["current-user"] });
+        queryClient.removeQueries({ queryKey: ["my-roles"] });
+        queryClient.removeQueries({ queryKey: ["my-profile"] });
+      }
     });
     return () => data.subscription.unsubscribe();
-  }, [router, queryClient]);
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <Toaster richColors position="top-right" />
       </ThemeProvider>
