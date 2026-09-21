@@ -189,16 +189,19 @@ export async function fetchCart() {
   });
 }
 
-async function assertInStock(bookId: string, quantity: number) {
+async function stockFor(bookId: string) {
   const book = await fetchShopBook(bookId);
-  const stock = book?.inventory?.quantity ?? 0;
-  if (!book || stock < quantity) {
-    throw new Error("This book is out of stock.");
-  }
+  return { book, stock: book?.inventory?.quantity ?? 0 };
+}
+
+async function assertInStock(bookId: string, quantity: number) {
+  const { book, stock } = await stockFor(bookId);
+  if (!book || stock <= 0) throw new Error("This book is out of stock.");
+  if (stock < quantity) throw new Error(`Only ${stock} left in stock.`);
+  return stock;
 }
 
 export async function addToCart(bookId: string, quantity = 1) {
-  await assertInStock(bookId, quantity);
   const user = await getCurrentUser();
 
   if (user) {
@@ -208,22 +211,20 @@ export async function addToCart(bookId: string, quantity = 1) {
       .eq("user_id", user.id)
       .eq("book_id", bookId)
       .maybeSingle();
-
+    const nextQty = (existing?.quantity ?? 0) + quantity;
+    await assertInStock(bookId, nextQty);
     if (existing) {
-      const { error } = await supabase
-        .from("cart_items")
-        .update({ quantity: existing.quantity + quantity })
-        .eq("id", existing.id);
+      const { error } = await supabase.from("cart_items").update({ quantity: nextQty }).eq("id", existing.id);
       if (error) throw error;
       return;
     }
-    const { error } = await supabase
-      .from("cart_items")
-      .insert({ user_id: user.id, book_id: bookId, quantity });
+    const { error } = await supabase.from("cart_items").insert({ user_id: user.id, book_id: bookId, quantity });
     if (error) throw error;
     return;
   }
 
+  const current = getGuestCart().find((item) => item.bookId === bookId)?.quantity ?? 0;
+  await assertInStock(bookId, current + quantity);
   addToGuestCart(bookId, quantity);
 }
 
@@ -233,11 +234,14 @@ export async function updateCartQuantity(cartItemId: string, quantity: number) {
   if (quantity <= 0) return removeCartItem(cartItemId);
 
   if (user) {
+    const { data: row } = await supabase.from("cart_items").select("book_id").eq("id", cartItemId).maybeSingle();
+    if (row?.book_id) await assertInStock(row.book_id, quantity);
     const { error } = await supabase.from("cart_items").update({ quantity }).eq("id", cartItemId);
     if (error) throw error;
     return;
   }
 
+  await assertInStock(cartItemId, quantity);
   updateGuestCartQuantity(cartItemId, quantity);
 }
 
@@ -267,13 +271,20 @@ export async function mergeGuestCart(): Promise<boolean> {
   if (existingError) throw existingError;
 
   const existingQuantities = new Map((existing ?? []).map((item) => [item.book_id, item.quantity]));
-  const rows = guestItems.map((item) => ({
-    user_id: user.id,
-    book_id: item.bookId,
-    quantity: (existingQuantities.get(item.bookId) ?? 0) + item.quantity,
-  }));
-  const { error } = await supabase.from("cart_items").upsert(rows, { onConflict: "user_id,book_id" });
-  if (error) throw error;
+  const stocks = await loadInventoryMap(guestItems.map((item) => item.bookId));
+  const rows = guestItems.map((item) => {
+    const stock = stocks.get(item.bookId) ?? 0;
+    const merged = (existingQuantities.get(item.bookId) ?? 0) + item.quantity;
+    return {
+      user_id: user.id,
+      book_id: item.bookId,
+      quantity: Math.max(1, Math.min(merged, Math.max(stock, 1))),
+    };
+  }).filter((row) => (stocks.get(row.book_id) ?? 0) > 0);
+  if (rows.length > 0) {
+    const { error } = await supabase.from("cart_items").upsert(rows, { onConflict: "user_id,book_id" });
+    if (error) throw error;
+  }
 
   clearGuestCart();
   return true;
@@ -348,6 +359,11 @@ export async function placeOrder(input: {
   taxRate?: number;
   notes?: string;
 }) {
+  const cart = await fetchCart();
+  const oversold = cart.find((row) => row.quantity > (row.books?.inventory?.quantity ?? 0));
+  if (oversold) {
+    throw new Error(`Only ${oversold.books?.inventory?.quantity ?? 0} left of ${oversold.books?.title ?? "this book"}. Reduce the quantity and try again.`);
+  }
   const { data, error } = await supabase.rpc("place_customer_order", {
     _payment_method: input.paymentMethod,
     _shipping_address: input.shippingAddress,
