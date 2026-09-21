@@ -1,5 +1,29 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Session } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
+
+/** Local session first. Avoid getUser() unless nothing is stored — it can wipe a valid session. */
+export async function getCurrentSession(): Promise<Session | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session ?? null;
+}
+
+export async function getCurrentUser(): Promise<User | null> {
+  const session = await getCurrentSession();
+  return session?.user ?? null;
+}
+
+export async function persistSession(session: Session | null | undefined) {
+  if (!session?.access_token || !session.refresh_token) return session ?? null;
+  const { data, error } = await supabase.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  });
+  if (error) {
+    console.warn("[auth] setSession failed", error.message);
+    return session;
+  }
+  return data.session ?? session;
+}
 
 /**
  * Records authentication events (login / logout) into the shared audit trail.
@@ -7,14 +31,14 @@ import type { Session } from "@supabase/supabase-js";
  */
 export async function logAuthEvent(action: "Login" | "Logout", label?: string | null) {
   try {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return;
+    const user = await getCurrentUser();
+    if (!user) return;
     await supabase.from("audit_logs").insert({
-      user_id: data.user.id,
+      user_id: user.id,
       action,
       entity_type: "auth",
       entity_id: null,
-      entity_label: label ?? data.user.email ?? null,
+      entity_label: label ?? user.email ?? null,
       metadata: {} as never,
     });
   } catch (error) {
@@ -24,11 +48,14 @@ export async function logAuthEvent(action: "Login" | "Logout", label?: string | 
 
 /** Waits until the persisted Supabase session is readable, so redirects never race. */
 export async function waitForSession(timeoutMs = 4000, existing?: Session | null) {
-  if (existing) return existing;
+  if (existing) {
+    await persistSession(existing);
+    return existing;
+  }
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) return data.session;
+    const session = await getCurrentSession();
+    if (session) return session;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   return null;
