@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,29 +12,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { currency } from "@/lib/inventory";
-import { fetchCart, placeOrder } from "@/lib/shop";
+import { fetchCart, fetchMyProfile, placeOrder } from "@/lib/shop";
 import { getCurrentUser } from "@/lib/auth";
 
 const TAX_RATE = 7.5;
 
 export const Route = createFileRoute("/_shop/checkout")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Checkout — Bookshelf Store" },
       { name: "description", content: "Complete your book order with cash, card or transfer." },
-      { property: "og:title", content: "Checkout — Bookshelf Store" },
-      { property: "og:description", content: "Secure checkout for your Bookshelf order." },
     ],
   }),
   component: CheckoutPage,
 });
 
 function CheckoutPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const userQuery = useQuery({
     queryKey: ["current-user"],
     queryFn: getCurrentUser,
+  });
+  const profileQuery = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: fetchMyProfile,
+    enabled: !!userQuery.data,
   });
   const cartQuery = useQuery({ queryKey: ["cart"], queryFn: fetchCart });
 
@@ -43,6 +46,10 @@ function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [method, setMethod] = useState<"cash" | "card" | "transfer">("card");
   const [placed, setPlaced] = useState<{ order_number: string; total: number } | null>(null);
+
+  useEffect(() => {
+    if (!phone && profileQuery.data?.phone) setPhone(profileQuery.data.phone);
+  }, [profileQuery.data, phone]);
 
   const rows = cartQuery.data ?? [];
   const subtotal = rows.reduce((sum, r) => sum + Number(r.books?.selling_price ?? 0) * r.quantity, 0);
@@ -107,7 +114,7 @@ function CheckoutPage() {
           <div className="mx-auto mt-8 max-w-lg card-elevated p-6 text-center">
             <h2 className="font-display text-xl font-semibold">Sign in to complete your order</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Your {rows.reduce((sum, row) => sum + row.quantity, 0)} cart items will be saved to your account after you sign in.
+              Your {rows.reduce((sum, row) => sum + row.quantity, 0)} cart items will be saved after you sign in or create an account.
             </p>
             <p className="mt-4 font-display text-2xl font-semibold">{currency(total)}</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -132,6 +139,9 @@ function CheckoutPage() {
   return (
     <ShopShell>
       <h1 className="font-display text-2xl font-semibold">Checkout</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Signed in as {profileQuery.data?.full_name || userQuery.data.email}. Add your delivery details below.
+      </p>
       {cartQuery.isLoading ? (
         <Skeleton className="mt-6 h-72 rounded-xl" />
       ) : rows.length === 0 ? (
@@ -184,7 +194,6 @@ function CheckoutPage() {
             <Button className="mt-5 w-full" disabled={!canSubmit || orderMutation.isPending} onClick={() => orderMutation.mutate()}>
               {orderMutation.isPending ? (<><Loader2 className="size-4 animate-spin" /> Placing order…</>) : "Place order"}
             </Button>
-            <p className="mt-2 text-center text-xs text-muted-foreground">Stock is reserved the moment your order is confirmed.</p>
           </div>
         </div>
       )}
