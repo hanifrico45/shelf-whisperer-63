@@ -1,5 +1,5 @@
 -- =====================================================================
--- InventoryBookshelf — COMPLETE SCHEMA
+-- Mindthrills Resources — COMPLETE SCHEMA
 -- Recreates the entire application backend on a fresh Supabase project.
 -- Run once, top to bottom, on an empty project (SQL Editor or CLI).
 -- Idempotent where practical. Schema + reference seed data only (no user data).

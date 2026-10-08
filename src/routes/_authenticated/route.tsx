@@ -8,9 +8,11 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const sessionUser = sessionData.session?.user ?? null;
-    const { data, error } = sessionUser ? { data: { user: sessionUser }, error: null } : await supabase.auth.getUser();
+    const { data, error } = sessionUser
+      ? { data: { user: sessionUser }, error: null }
+      : await supabase.auth.getUser();
     const user = data.user ?? sessionUser;
-    if (error || !user) throw redirect({ to: "/auth", search: { mode: "login" } });
+    if (error || !user) throw redirect({ to: "/auth", search: { mode: "login", next: undefined } });
     const roles = await fetchMyRoles();
     if (!isStaffRole(roles)) throw redirect({ to: "/shop" });
     return { user, roles };

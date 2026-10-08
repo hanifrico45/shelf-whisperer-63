@@ -9,7 +9,6 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   customer: "Customer",
 };
 
-
 export interface BookRow {
   id: string;
   title: string;
@@ -22,6 +21,10 @@ export interface BookRow {
   supplier_id: string | null;
   purchase_cost: number;
   selling_price: number;
+  rentable: boolean;
+  rental_category: "A" | "B" | "C" | null;
+  rental_fee: number | null;
+  one_at_a_time: boolean;
   status: BookStatus;
   created_at: string;
   updated_at: string;
@@ -52,7 +55,17 @@ export interface AuditRow {
 const sel = (s: string): string => s;
 
 const BOOK_SELECT =
+  "id,title,author,isbn,barcode,cover_url,description,category_id,supplier_id,purchase_cost,selling_price,status,rentable,rental_category,rental_fee,one_at_a_time,created_at,updated_at,categories(id,name),suppliers(id,name),inventory(id,quantity,minimum_stock_level,shelf_location)";
+const BOOK_SELECT_WITHOUT_RENTAL =
   "id,title,author,isbn,barcode,cover_url,description,category_id,supplier_id,purchase_cost,selling_price,status,created_at,updated_at,categories(id,name),suppliers(id,name),inventory(id,quantity,minimum_stock_level,shelf_location)";
+
+function isMissingRentalBookColumns(error: { message?: string } | null) {
+  return (
+    !!error &&
+    /column|schema cache/i.test(error.message ?? "") &&
+    /rentable|rental_category|rental_fee|one_at_a_time/i.test(error.message ?? "")
+  );
+}
 
 export const bookSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
@@ -63,6 +76,10 @@ export const bookSchema = z.object({
   supplier_id: z.string().optional().or(z.literal("")),
   purchase_cost: z.coerce.number().min(0, "Must be 0 or more"),
   selling_price: z.coerce.number().min(0, "Must be 0 or more"),
+  rentable: z.boolean(),
+  rental_category: z.enum(["A", "B", "C"]).nullable(),
+  rental_fee: z.number().positive().nullable(),
+  one_at_a_time: z.boolean(),
   quantity: z.coerce.number().int().min(0, "Must be 0 or more"),
   minimum_stock_level: z.coerce.number().int().min(0, "Must be 0 or more"),
   shelf_location: z.string().trim().max(60).optional().or(z.literal("")),
@@ -77,6 +94,8 @@ const nullable = (value?: string) => (value && value.length > 0 ? value : null);
 /** Turns Postgres / network failures into copy a bookseller can act on. */
 export function friendlyDbError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? "");
+  if (isMissingRentalBookColumns({ message }))
+    return "Rental settings are not available in the connected database yet. Apply supabase/migrations/20261005120000_book_rentals.sql, then retry.";
   if (typeof navigator !== "undefined" && !navigator.onLine)
     return "You're offline — reconnect to save changes.";
   if (/duplicate key|unique constraint/i.test(message))
@@ -102,7 +121,6 @@ async function assertIsbnAvailable(isbn: string | null, excludeId?: string) {
   if (data && data.length > 0) throw new Error(`A book with ISBN ${isbn} already exists.`);
 }
 
-
 export interface BooksQuery {
   search: string;
   categoryId: string;
@@ -112,28 +130,48 @@ export interface BooksQuery {
 }
 
 export async function fetchBooks({ search, categoryId, status, page, pageSize }: BooksQuery) {
-  let query = supabase
-    .from("books")
-    .select(sel(BOOK_SELECT), { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(page * pageSize, page * pageSize + pageSize - 1);
+  const run = (select: string) => {
+    let query = supabase
+      .from("books")
+      .select(sel(select), { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
 
-  if (search.trim()) {
-    const term = `%${search.trim()}%`;
-    query = query.or(`title.ilike.${term},author.ilike.${term},isbn.ilike.${term}`);
-  }
-  if (categoryId && categoryId !== "all") query = query.eq("category_id", categoryId);
-  if (status && status !== "all") query = query.eq("status", status as BookStatus);
+    if (search.trim()) {
+      const term = `%${search.trim()}%`;
+      query = query.or(`title.ilike.${term},author.ilike.${term},isbn.ilike.${term}`);
+    }
+    if (categoryId && categoryId !== "all") query = query.eq("category_id", categoryId);
+    if (status && status !== "all") query = query.eq("status", status as BookStatus);
+    return query.returns<BookRow[]>();
+  };
 
-  const { data, error, count } = await query.returns<BookRow[]>();
-  if (error) throw error;
-  return { rows: data ?? [], count: count ?? 0 };
+  const primary = await run(BOOK_SELECT);
+  if (!primary.error) return { rows: primary.data ?? [], count: primary.count ?? 0 };
+  if (!isMissingRentalBookColumns(primary.error)) throw primary.error;
+
+  // Keep the shared bookstore catalog readable when the optional rental migration
+  // has not reached the connected Supabase project yet.
+  const fallback = await run(BOOK_SELECT_WITHOUT_RENTAL);
+  if (fallback.error) throw fallback.error;
+  return {
+    rows: (fallback.data ?? []).map((book) => ({
+      ...book,
+      rentable: false,
+      rental_category: null,
+      rental_fee: null,
+      one_at_a_time: false,
+    })),
+    count: fallback.count ?? 0,
+  };
 }
 
 export async function fetchAllBooksLight() {
   const { data, error } = await supabase
     .from("books")
-    .select(sel("id,title,purchase_cost,selling_price,status,inventory(quantity,minimum_stock_level)"))
+    .select(
+      sel("id,title,purchase_cost,selling_price,status,inventory(quantity,minimum_stock_level)"),
+    )
     .returns<
       {
         id: string;
@@ -191,7 +229,9 @@ export async function createBook(values: BookFormValues) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) throw new Error("Your session expired. Please sign in again.");
   await assertIsbnAvailable(nullable(values.isbn));
-  const { data, error } = await supabase
+  // Rental columns arrive with the rental migration; generated Supabase types are refreshed after deployment.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from("books")
     .insert({
       title: values.title,
@@ -203,6 +243,10 @@ export async function createBook(values: BookFormValues) {
       supplier_id: nullable(values.supplier_id),
       purchase_cost: values.purchase_cost,
       selling_price: values.selling_price,
+      rentable: values.rentable,
+      rental_category: values.rental_category,
+      rental_fee: values.rental_fee,
+      one_at_a_time: values.one_at_a_time,
       status: values.status,
       created_by: userData.user.id,
     })
@@ -224,7 +268,8 @@ export async function createBook(values: BookFormValues) {
 
 export async function updateBook(book: BookRow, values: BookFormValues) {
   await assertIsbnAvailable(nullable(values.isbn), book.id);
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from("books")
     .update({
       title: values.title,
@@ -236,6 +281,10 @@ export async function updateBook(book: BookRow, values: BookFormValues) {
       supplier_id: nullable(values.supplier_id),
       purchase_cost: values.purchase_cost,
       selling_price: values.selling_price,
+      rentable: values.rentable,
+      rental_category: values.rental_category,
+      rental_fee: values.rental_fee,
+      one_at_a_time: values.one_at_a_time,
       status: values.status,
     })
     .eq("id", book.id);
@@ -268,7 +317,6 @@ export async function deleteBook(book: BookRow) {
   const { error } = await supabase.from("books").delete().eq("id", book.id);
   if (error) throw new Error(friendlyDbError(error));
   await logAudit("Book Deleted", book.id, book.title);
-
 }
 
 const COVER_BUCKET = "book-covers";
@@ -302,7 +350,9 @@ export async function signedCoverUrl(path: string | null) {
   if (/^https?:\/\//i.test(cleaned)) return cleaned;
 
   const publicUrl = publicCoverUrl(cleaned);
-  const { data, error } = await supabase.storage.from(COVER_BUCKET).createSignedUrl(cleaned, 60 * 60 * 24);
+  const { data, error } = await supabase.storage
+    .from(COVER_BUCKET)
+    .createSignedUrl(cleaned, 60 * 60 * 24);
   if (!error && data?.signedUrl) return data.signedUrl;
   return publicUrl;
 }

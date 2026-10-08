@@ -16,6 +16,10 @@ export interface ShopBook {
   description: string | null;
   cover_url: string | null;
   selling_price: number;
+  rentable?: boolean;
+  rental_category?: "A" | "B" | "C" | null;
+  rental_fee?: number | null;
+  one_at_a_time?: boolean;
   status: string;
   category_id: string | null;
   categories: { id: string; name: string } | null;
@@ -23,7 +27,7 @@ export interface ShopBook {
 }
 
 const SHOP_SELECT =
-  "id,title,author,isbn,description,cover_url,selling_price,status,category_id," +
+  "id,title,author,isbn,description,cover_url,selling_price,status,category_id,rentable,rental_category,rental_fee," +
   "categories(id,name),inventory(quantity)";
 
 const SHOP_SELECT_BOOKS_ONLY =
@@ -48,10 +52,7 @@ export async function fetchShopBooks(params: {
   pageSize: number;
 }) {
   const run = async (select: string) => {
-    let query = supabase
-      .from("books")
-      .select(select, { count: "exact" })
-      .eq("status", "active");
+    let query = supabase.from("books").select(select, { count: "exact" }).eq("status", "active");
 
     const clean = params.search.trim();
     if (clean) {
@@ -85,6 +86,9 @@ export async function fetchShopBooks(params: {
     rows = rows.map((book) => ({
       ...book,
       inventory: book.inventory ?? { quantity: quantities.get(book.id) ?? 0 },
+      rentable: book.rentable ?? false,
+      rental_category: book.rental_category ?? null,
+      rental_fee: book.rental_fee ?? null,
     }));
   }
 
@@ -114,6 +118,9 @@ export async function fetchShopBook(id: string) {
     const quantities = await loadInventoryMap([id]);
     return {
       ...fallback.data,
+      rentable: false,
+      rental_category: null,
+      rental_fee: null,
       categories: null,
       inventory: { quantity: quantities.get(id) ?? 0 },
     } as ShopBook;
@@ -147,7 +154,9 @@ export async function fetchCart() {
   if (user) {
     const { data, error } = await supabase
       .from("cart_items")
-      .select("id,quantity,book_id,books(id,title,author,cover_url,selling_price,inventory(quantity))")
+      .select(
+        "id,quantity,book_id,books(id,title,author,cover_url,selling_price,inventory(quantity))",
+      )
       .eq("user_id", user.id)
       .order("created_at")
       .returns<CartRow[]>();
@@ -217,11 +226,16 @@ export async function addToCart(bookId: string, quantity = 1) {
     const nextQty = (existing?.quantity ?? 0) + quantity;
     await assertInStock(bookId, nextQty);
     if (existing) {
-      const { error } = await supabase.from("cart_items").update({ quantity: nextQty }).eq("id", existing.id);
+      const { error } = await supabase
+        .from("cart_items")
+        .update({ quantity: nextQty })
+        .eq("id", existing.id);
       if (error) throw error;
       return;
     }
-    const { error } = await supabase.from("cart_items").insert({ user_id: user.id, book_id: bookId, quantity });
+    const { error } = await supabase
+      .from("cart_items")
+      .insert({ user_id: user.id, book_id: bookId, quantity });
     if (error) throw error;
     return;
   }
@@ -237,7 +251,11 @@ export async function updateCartQuantity(cartItemId: string, quantity: number) {
   if (quantity <= 0) return removeCartItem(cartItemId);
 
   if (user) {
-    const { data: row } = await supabase.from("cart_items").select("book_id").eq("id", cartItemId).maybeSingle();
+    const { data: row } = await supabase
+      .from("cart_items")
+      .select("book_id")
+      .eq("id", cartItemId)
+      .maybeSingle();
     if (row?.book_id) await assertInStock(row.book_id, quantity);
     const { error } = await supabase.from("cart_items").update({ quantity }).eq("id", cartItemId);
     if (error) throw error;
@@ -281,7 +299,10 @@ export async function mergeGuestCart(): Promise<boolean> {
       const already = existingByBook.get(item.bookId);
       const quantity = Math.min(stock, (already?.quantity ?? 0) + item.quantity);
       if (already) {
-        const { error } = await supabase.from("cart_items").update({ quantity }).eq("id", already.id);
+        const { error } = await supabase
+          .from("cart_items")
+          .update({ quantity })
+          .eq("id", already.id);
         if (error) console.warn("[cart] merge update failed", error.message);
       } else {
         const { error } = await supabase.from("cart_items").insert({
@@ -373,7 +394,9 @@ export async function fetchMyOrders() {
 
   const plain = await supabase
     .from("orders")
-    .select("id,order_number,status,subtotal,tax_amount,total,payment_method,shipping_address,contact_phone,created_at")
+    .select(
+      "id,order_number,status,subtotal,tax_amount,total,payment_method,shipping_address,contact_phone,created_at",
+    )
     .eq("customer_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -395,7 +418,9 @@ export async function placeOrder(input: {
   const cart = await fetchCart();
   const oversold = cart.find((row) => row.quantity > (row.books?.inventory?.quantity ?? 0));
   if (oversold) {
-    throw new Error(`Only ${oversold.books?.inventory?.quantity ?? 0} left of ${oversold.books?.title ?? "this book"}. Reduce the quantity and try again.`);
+    throw new Error(
+      `Only ${oversold.books?.inventory?.quantity ?? 0} left of ${oversold.books?.title ?? "this book"}. Reduce the quantity and try again.`,
+    );
   }
   const { data, error } = await supabase.rpc("place_customer_order", {
     _payment_method: input.paymentMethod,

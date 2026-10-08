@@ -80,13 +80,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bookshelf — Bookstore Inventory System" },
+      { title: "Mindthrills Resources — Books & Learning" },
       {
         name: "description",
-        content: "Manage bookstore stock, catalog and staff activity in one modern workspace.",
+        content: "Shop books and learning resources from Mindthrills Resources.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Mindthrills Resources" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Mindthrills Resources — Books & Learning" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -96,7 +98,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "64x64" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -131,7 +135,13 @@ function RootComponent() {
         queryClient.removeQueries({ queryKey: ["my-orders"] });
         return;
       }
-      if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session?.user) {
+      if (
+        (event === "INITIAL_SESSION" ||
+          event === "SIGNED_IN" ||
+          event === "TOKEN_REFRESHED" ||
+          event === "USER_UPDATED") &&
+        session?.user
+      ) {
         queryClient.setQueryData(["current-user"], session.user);
       }
     });

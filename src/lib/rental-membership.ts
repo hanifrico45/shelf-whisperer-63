@@ -1,0 +1,1 @@
+export const RENTAL_MEMBERSHIP_WHATSAPP_URL = "https://wa.me/c/2348184556437";

@@ -16,8 +16,11 @@ export const Route = createFileRoute("/_shop/account")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "My profile — Bookshelf Store" },
-      { name: "description", content: "Manage your Bookshelf customer profile and contact details." },
+      { title: "My profile — Mindthrills Resources" },
+      {
+        name: "description",
+        content: "Manage your Mindthrills Resources customer profile and contact details.",
+      },
     ],
   }),
   component: AccountPage,
@@ -59,7 +62,9 @@ function AccountPage() {
         <div className="card-elevated mx-auto mt-8 max-w-lg p-6 text-center">
           <p className="text-sm text-muted-foreground">Sign in to see and edit your profile.</p>
           <Button className="mt-4" asChild>
-            <Link to="/auth" search={{ mode: "login", next: "/account" }}>Sign in</Link>
+            <Link to="/auth" search={{ mode: "login", next: "/account" }}>
+              Sign in
+            </Link>
           </Button>
         </div>
       ) : profileQuery.isLoading ? (
@@ -68,18 +73,38 @@ function AccountPage() {
         <div className="card-elevated mt-6 max-w-lg space-y-4 p-5">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" value={profileQuery.data?.email ?? userQuery.data.email ?? ""} disabled />
+            <Input
+              id="email"
+              value={profileQuery.data?.email ?? userQuery.data.email ?? ""}
+              disabled
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="full-name">Full name</Label>
-            <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" />
+            <Input
+              id="full-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your name"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="profile-phone">Phone</Label>
-            <Input id="profile-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 0803 000 1234" />
+            <Input
+              id="profile-phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="e.g. 0803 000 1234"
+            />
           </div>
           <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-            {saveMutation.isPending ? (<><Loader2 className="size-4 animate-spin" /> Saving…</>) : "Save changes"}
+            {saveMutation.isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" /> Saving…
+              </>
+            ) : (
+              "Save changes"
+            )}
           </Button>
         </div>
       )}

@@ -1,15 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Barcode,
-  Minus,
-  Plus,
-  Search,
-  ShoppingCart,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Barcode, Minus, Plus, Search, ShoppingCart, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/AppShell";
@@ -48,13 +40,13 @@ import {
 export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({
     meta: [
-      { title: "Point of Sale — Bookshelf Inventory" },
+      { title: "Point of Sale — Mindthrills Resources" },
       {
         name: "description",
         content:
           "Scan or search books, build a cart, apply discounts and tax, take split payments and print receipts.",
       },
-      { property: "og:title", content: "Point of Sale — Bookshelf Inventory" },
+      { property: "og:title", content: "Point of Sale — Mindthrills Resources" },
       { property: "og:description", content: "Sell books and update stock in real time." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -138,9 +130,7 @@ function PosPage() {
           toast.error(`Only ${stock} in stock`);
           return prev;
         }
-        return prev.map((l) =>
-          l.book_id === book.id ? { ...l, quantity: l.quantity + 1 } : l,
-        );
+        return prev.map((l) => (l.book_id === book.id ? { ...l, quantity: l.quantity + 1 } : l));
       }
       return [
         ...prev,
@@ -316,10 +306,7 @@ function PosPage() {
                 </p>
               ) : (
                 lines.map((line) => (
-                  <div
-                    key={line.book_id}
-                    className="rounded-lg border border-border p-3"
-                  >
+                  <div key={line.book_id} className="rounded-lg border border-border p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{line.title}</p>
@@ -349,9 +336,7 @@ function PosPage() {
                         </Button>
                         <Input
                           value={line.quantity}
-                          onChange={(e) =>
-                            setQuantity(line.book_id, Number(e.target.value) || 0)
-                          }
+                          onChange={(e) => setQuantity(line.book_id, Number(e.target.value) || 0)}
                           className="h-8 w-14 text-center"
                           aria-label={`Quantity for ${line.title}`}
                         />
@@ -543,11 +528,7 @@ function PosPage() {
               >
                 <X className="mr-2 size-4" /> Clear
               </Button>
-              <Button
-                className="flex-1"
-                disabled={!canCheckout}
-                onClick={() => checkout.mutate()}
-              >
+              <Button className="flex-1" disabled={!canCheckout} onClick={() => checkout.mutate()}>
                 {checkout.isPending ? "Processing…" : "Complete sale"}
               </Button>
             </div>

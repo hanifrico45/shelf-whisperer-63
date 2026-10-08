@@ -48,7 +48,14 @@ export function ReceiptDialog({
         {sale ? (
           <div id="receipt-printable" className="rounded-lg border border-border p-4 text-sm">
             <div className="text-center">
-              <p className="font-display text-lg font-semibold">Bookshelf</p>
+              <div className="flex items-center justify-center gap-2">
+                <img
+                  src="/images/mindthrills-resources-logo.png"
+                  alt=""
+                  className="size-9 rounded-full object-contain"
+                />
+                <p className="font-display text-lg font-semibold">Mindthrills Resources</p>
+              </div>
               <p className="text-xs text-muted-foreground">Point of Sale receipt</p>
             </div>
             <Separator className="my-3" />
@@ -56,9 +63,7 @@ export function ReceiptDialog({
               <p>Sale: {sale.sale_number}</p>
               <p>Date: {new Date(sale.created_at).toLocaleString()}</p>
               {sale.customer_name ? <p>Customer: {sale.customer_name}</p> : null}
-              {receipt && receipt.print_count > 0 ? (
-                <p>Reprints: {receipt.print_count}</p>
-              ) : null}
+              {receipt && receipt.print_count > 0 ? <p>Reprints: {receipt.print_count}</p> : null}
             </div>
             <Separator className="my-3" />
             <div className="space-y-2">
@@ -70,9 +75,7 @@ export function ReceiptDialog({
                       {item.quantity} × {currency(Number(item.unit_price))}
                     </span>
                   </span>
-                  <span className="shrink-0 tabular-nums">
-                    {currency(Number(item.line_total))}
-                  </span>
+                  <span className="shrink-0 tabular-nums">{currency(Number(item.line_total))}</span>
                 </div>
               ))}
             </div>

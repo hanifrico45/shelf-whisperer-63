@@ -19,13 +19,16 @@ import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedBooksRouteImport } from './routes/_authenticated/books'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
+import { Route as AuthenticatedRentalManagementRouteImport } from './routes/_authenticated/rental-management'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as ShopAccountRouteImport } from './routes/_shop/account'
 import { Route as ShopCartRouteImport } from './routes/_shop/cart'
 import { Route as ShopCheckoutRouteImport } from './routes/_shop/checkout'
 import { Route as ShopOrdersRouteImport } from './routes/_shop/orders'
-import { Route as ShopShopRouteImport } from './routes/_shop/shop'
+import { Route as ShopRentalPolicyRouteImport } from './routes/_shop/rental-policy'
+import { Route as ShopRentalsRouteImport } from './routes/_shop/rentals'
+import { Route as ShopShopIndexRouteImport } from './routes/_shop/shop.index'
 import { Route as ShopShopBookIdRouteImport } from './routes/_shop/shop.$bookId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -76,6 +79,12 @@ const AuthenticatedPosRoute = AuthenticatedPosRouteImport.update({
   path: '/pos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRentalManagementRoute =
+  AuthenticatedRentalManagementRouteImport.update({
+    id: '/rental-management',
+    path: '/rental-management',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSalesRoute = AuthenticatedSalesRouteImport.update({
   id: '/sales',
   path: '/sales',
@@ -106,15 +115,25 @@ const ShopOrdersRoute = ShopOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => ShopRouteRoute,
 } as any)
-const ShopShopRoute = ShopShopRouteImport.update({
-  id: '/shop',
-  path: '/shop',
+const ShopRentalPolicyRoute = ShopRentalPolicyRouteImport.update({
+  id: '/rental-policy',
+  path: '/rental-policy',
+  getParentRoute: () => ShopRouteRoute,
+} as any)
+const ShopRentalsRoute = ShopRentalsRouteImport.update({
+  id: '/rentals',
+  path: '/rentals',
+  getParentRoute: () => ShopRouteRoute,
+} as any)
+const ShopShopIndexRoute = ShopShopIndexRouteImport.update({
+  id: '/shop/',
+  path: '/shop/',
   getParentRoute: () => ShopRouteRoute,
 } as any)
 const ShopShopBookIdRoute = ShopShopBookIdRouteImport.update({
-  id: '/$bookId',
-  path: '/$bookId',
-  getParentRoute: () => ShopShopRoute,
+  id: '/shop/$bookId',
+  path: '/shop/$bookId',
+  getParentRoute: () => ShopRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -126,14 +145,17 @@ export interface FileRoutesByFullPath {
   '/books': typeof AuthenticatedBooksRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/pos': typeof AuthenticatedPosRoute
+  '/rental-management': typeof AuthenticatedRentalManagementRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/team': typeof AuthenticatedTeamRoute
   '/account': typeof ShopAccountRoute
   '/cart': typeof ShopCartRoute
   '/checkout': typeof ShopCheckoutRoute
   '/orders': typeof ShopOrdersRoute
-  '/shop': typeof ShopShopRouteWithChildren
+  '/rental-policy': typeof ShopRentalPolicyRoute
+  '/rentals': typeof ShopRentalsRoute
   '/shop/$bookId': typeof ShopShopBookIdRoute
+  '/shop/': typeof ShopShopIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -144,14 +166,17 @@ export interface FileRoutesByTo {
   '/books': typeof AuthenticatedBooksRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/pos': typeof AuthenticatedPosRoute
+  '/rental-management': typeof AuthenticatedRentalManagementRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/team': typeof AuthenticatedTeamRoute
   '/account': typeof ShopAccountRoute
   '/cart': typeof ShopCartRoute
   '/checkout': typeof ShopCheckoutRoute
   '/orders': typeof ShopOrdersRoute
-  '/shop': typeof ShopShopRouteWithChildren
+  '/rental-policy': typeof ShopRentalPolicyRoute
+  '/rentals': typeof ShopRentalsRoute
   '/shop/$bookId': typeof ShopShopBookIdRoute
+  '/shop': typeof ShopShopIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -165,14 +190,17 @@ export interface FileRoutesById {
   '/_authenticated/books': typeof AuthenticatedBooksRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/pos': typeof AuthenticatedPosRoute
+  '/_authenticated/rental-management': typeof AuthenticatedRentalManagementRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_shop/account': typeof ShopAccountRoute
   '/_shop/cart': typeof ShopCartRoute
   '/_shop/checkout': typeof ShopCheckoutRoute
   '/_shop/orders': typeof ShopOrdersRoute
-  '/_shop/shop': typeof ShopShopRouteWithChildren
+  '/_shop/rental-policy': typeof ShopRentalPolicyRoute
+  '/_shop/rentals': typeof ShopRentalsRoute
   '/_shop/shop/$bookId': typeof ShopShopBookIdRoute
+  '/_shop/shop/': typeof ShopShopIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -185,14 +213,17 @@ export interface FileRouteTypes {
     | '/books'
     | '/dashboard'
     | '/pos'
+    | '/rental-management'
     | '/sales'
     | '/team'
     | '/account'
     | '/cart'
     | '/checkout'
     | '/orders'
-    | '/shop'
+    | '/rental-policy'
+    | '/rentals'
     | '/shop/$bookId'
+    | '/shop/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -203,14 +234,17 @@ export interface FileRouteTypes {
     | '/books'
     | '/dashboard'
     | '/pos'
+    | '/rental-management'
     | '/sales'
     | '/team'
     | '/account'
     | '/cart'
     | '/checkout'
     | '/orders'
-    | '/shop'
+    | '/rental-policy'
+    | '/rentals'
     | '/shop/$bookId'
+    | '/shop'
   id:
     | '__root__'
     | '/'
@@ -223,14 +257,17 @@ export interface FileRouteTypes {
     | '/_authenticated/books'
     | '/_authenticated/dashboard'
     | '/_authenticated/pos'
+    | '/_authenticated/rental-management'
     | '/_authenticated/sales'
     | '/_authenticated/team'
     | '/_shop/account'
     | '/_shop/cart'
     | '/_shop/checkout'
     | '/_shop/orders'
-    | '/_shop/shop'
+    | '/_shop/rental-policy'
+    | '/_shop/rentals'
     | '/_shop/shop/$bookId'
+    | '/_shop/shop/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -314,6 +351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rental-management': {
+      id: '/_authenticated/rental-management'
+      path: '/rental-management'
+      fullPath: '/rental-management'
+      preLoaderRoute: typeof AuthenticatedRentalManagementRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sales': {
       id: '/_authenticated/sales'
       path: '/sales'
@@ -356,19 +400,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopOrdersRouteImport
       parentRoute: typeof ShopRouteRoute
     }
-    '/_shop/shop': {
-      id: '/_shop/shop'
+    '/_shop/rental-policy': {
+      id: '/_shop/rental-policy'
+      path: '/rental-policy'
+      fullPath: '/rental-policy'
+      preLoaderRoute: typeof ShopRentalPolicyRouteImport
+      parentRoute: typeof ShopRouteRoute
+    }
+    '/_shop/rentals': {
+      id: '/_shop/rentals'
+      path: '/rentals'
+      fullPath: '/rentals'
+      preLoaderRoute: typeof ShopRentalsRouteImport
+      parentRoute: typeof ShopRouteRoute
+    }
+    '/_shop/shop/': {
+      id: '/_shop/shop/'
       path: '/shop'
-      fullPath: '/shop'
-      preLoaderRoute: typeof ShopShopRouteImport
+      fullPath: '/shop/'
+      preLoaderRoute: typeof ShopShopIndexRouteImport
       parentRoute: typeof ShopRouteRoute
     }
     '/_shop/shop/$bookId': {
       id: '/_shop/shop/$bookId'
-      path: '/$bookId'
+      path: '/shop/$bookId'
       fullPath: '/shop/$bookId'
       preLoaderRoute: typeof ShopShopBookIdRouteImport
-      parentRoute: typeof ShopShopRoute
+      parentRoute: typeof ShopRouteRoute
     }
   }
 }
@@ -378,6 +436,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBooksRoute: typeof AuthenticatedBooksRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
+  AuthenticatedRentalManagementRoute: typeof AuthenticatedRentalManagementRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
 }
@@ -387,6 +446,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBooksRoute: AuthenticatedBooksRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedPosRoute: AuthenticatedPosRoute,
+  AuthenticatedRentalManagementRoute: AuthenticatedRentalManagementRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
 }
@@ -394,24 +454,15 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface ShopShopRouteChildren {
-  ShopShopBookIdRoute: typeof ShopShopBookIdRoute
-}
-
-const ShopShopRouteChildren: ShopShopRouteChildren = {
-  ShopShopBookIdRoute: ShopShopBookIdRoute,
-}
-
-const ShopShopRouteWithChildren = ShopShopRoute._addFileChildren(
-  ShopShopRouteChildren,
-)
-
 interface ShopRouteRouteChildren {
   ShopAccountRoute: typeof ShopAccountRoute
   ShopCartRoute: typeof ShopCartRoute
   ShopCheckoutRoute: typeof ShopCheckoutRoute
   ShopOrdersRoute: typeof ShopOrdersRoute
-  ShopShopRoute: typeof ShopShopRouteWithChildren
+  ShopRentalPolicyRoute: typeof ShopRentalPolicyRoute
+  ShopRentalsRoute: typeof ShopRentalsRoute
+  ShopShopBookIdRoute: typeof ShopShopBookIdRoute
+  ShopShopIndexRoute: typeof ShopShopIndexRoute
 }
 
 const ShopRouteRouteChildren: ShopRouteRouteChildren = {
@@ -419,7 +470,10 @@ const ShopRouteRouteChildren: ShopRouteRouteChildren = {
   ShopCartRoute: ShopCartRoute,
   ShopCheckoutRoute: ShopCheckoutRoute,
   ShopOrdersRoute: ShopOrdersRoute,
-  ShopShopRoute: ShopShopRouteWithChildren,
+  ShopRentalPolicyRoute: ShopRentalPolicyRoute,
+  ShopRentalsRoute: ShopRentalsRoute,
+  ShopShopBookIdRoute: ShopShopBookIdRoute,
+  ShopShopIndexRoute: ShopShopIndexRoute,
 }
 
 const ShopRouteRouteWithChildren = ShopRouteRoute._addFileChildren(

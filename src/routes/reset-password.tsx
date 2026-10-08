@@ -32,8 +32,11 @@ export const Route = createFileRoute("/reset-password")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Set a new password — Bookshelf" },
-      { name: "description", content: "Choose a new password for your Bookshelf account." },
+      { title: "Set a new password — Mindthrills Resources" },
+      {
+        name: "description",
+        content: "Choose a new password for your Mindthrills Resources account.",
+      },
     ],
   }),
   component: ResetPassword,
@@ -91,7 +94,11 @@ function ResetPassword() {
                   <FormItem>
                     <FormLabel>New password</FormLabel>
                     <FormControl>
-                      <PasswordInput placeholder="••••••••" autoComplete="new-password" {...field} />
+                      <PasswordInput
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -104,7 +111,11 @@ function ResetPassword() {
                   <FormItem>
                     <FormLabel>Confirm password</FormLabel>
                     <FormControl>
-                      <PasswordInput placeholder="••••••••" autoComplete="new-password" {...field} />
+                      <PasswordInput
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

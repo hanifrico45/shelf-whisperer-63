@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CoverImage } from "./CoverImage";
+import { Switch } from "@/components/ui/switch";
 import {
   bookSchema,
   createBook,
@@ -57,6 +58,10 @@ const emptyValues: BookFormValues = {
   shelf_location: "",
   status: "active",
   cover_url: "",
+  rentable: false,
+  rental_category: null,
+  rental_fee: null,
+  one_at_a_time: false,
 };
 
 export function BookDialog({
@@ -93,6 +98,10 @@ export function BookDialog({
             supplier_id: book.supplier_id ?? "",
             purchase_cost: Number(book.purchase_cost),
             selling_price: Number(book.selling_price),
+            rentable: book.rentable ?? false,
+            rental_category: book.rental_category ?? null,
+            rental_fee: book.rental_fee == null ? null : Number(book.rental_fee),
+            one_at_a_time: book.one_at_a_time ?? false,
             quantity: book.inventory?.quantity ?? 0,
             minimum_stock_level: book.inventory?.minimum_stock_level ?? 5,
             shelf_location: book.inventory?.shelf_location ?? "",
@@ -282,6 +291,83 @@ export function BookDialog({
                       <Input type="number" step="0.01" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="rentable"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <FormLabel>Available for rental</FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Books priced ₦3,000–₦12,000 get an automatic category and fee.
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="rental_category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rental category</FormLabel>
+                    <Select
+                      value={field.value ?? "auto"}
+                      onValueChange={(v) => field.onChange(v === "auto" ? null : v)}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="auto">Automatic from selling value</SelectItem>
+                        <SelectItem value="A">A · ₦1,200 default</SelectItem>
+                        <SelectItem value="B">B · ₦800 default</SelectItem>
+                        <SelectItem value="C">C · ₦500 default</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="rental_fee"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rental fee override (optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="Automatic by category"
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? null : Number(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="one_at_a_time"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <FormLabel>One-at-a-time borrowing limit</FormLabel>
+                    <FormControl>
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
                   </FormItem>
                 )}
               />
