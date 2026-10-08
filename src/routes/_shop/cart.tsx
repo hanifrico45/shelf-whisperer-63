@@ -14,7 +14,7 @@ import { getCurrentUser } from "@/lib/auth";
 export const Route = createFileRoute("/_shop/cart")({
   head: () => ({
     meta: [
-      { title: "Your cart — Bookshelf Store" },
+      { title: "Your cart — Mindthrills Resources" },
       { name: "description", content: "Review the books in your cart before checking out." },
     ],
   }),

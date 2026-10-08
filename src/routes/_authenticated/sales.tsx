@@ -26,12 +26,12 @@ const PAGE_SIZE = 10;
 export const Route = createFileRoute("/_authenticated/sales")({
   head: () => ({
     meta: [
-      { title: "Sales History — Bookshelf Inventory" },
+      { title: "Sales History — Mindthrills Resources" },
       {
         name: "description",
         content: "Browse every completed sale, inspect line items and reprint receipts.",
       },
-      { property: "og:title", content: "Sales History — Bookshelf Inventory" },
+      { property: "og:title", content: "Sales History — Mindthrills Resources" },
       { property: "og:description", content: "Every sale, payment and receipt in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -125,9 +125,7 @@ function SalesPage() {
                       {new Date(sale.created_at).toLocaleString()}
                     </TableCell>
                     <TableCell>{sale.customer_name ?? "Walk-in"}</TableCell>
-                    <TableCell>
-                      {sale.sale_items.reduce((s, i) => s + i.quantity, 0)}
-                    </TableCell>
+                    <TableCell>{sale.sale_items.reduce((s, i) => s + i.quantity, 0)}</TableCell>
                     <TableCell className="space-x-1">
                       {sale.transactions.map((t) => (
                         <Badge key={t.id} variant="secondary">

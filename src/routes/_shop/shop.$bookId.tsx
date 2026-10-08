@@ -12,13 +12,17 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currency } from "@/lib/inventory";
 import { addToCart, fetchShopBook } from "@/lib/shop";
+import { BookRentalAction } from "@/components/shop/BookRentalAction";
 
 export const Route = createFileRoute("/_shop/shop/$bookId")({
   head: () => ({
     meta: [
-      { title: "Book details — Bookshelf Store" },
-      { name: "description", content: "Book details, price and availability at Bookshelf." },
-      { property: "og:title", content: "Book details — Bookshelf Store" },
+      { title: "Book details — Mindthrills Resources" },
+      {
+        name: "description",
+        content: "Book details, prices and availability at Mindthrills Resources.",
+      },
+      { property: "og:title", content: "Book details — Mindthrills Resources" },
       { property: "og:description", content: "See price, stock and description before you buy." },
     ],
   }),
@@ -107,6 +111,23 @@ function BookDetailPage() {
                   </>
                 )}
               </Button>
+            </div>
+
+            <div className="mt-5 rounded-xl border border-border bg-card p-4">
+              <p className="text-sm font-medium">Rent this book</p>
+              {book.rentable && book.rental_fee ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Category {book.rental_category} · {currency(Number(book.rental_fee))} rental fee.
+                  Membership is separate from the purchase price.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Rental availability is checked separately from purchase stock.
+                </p>
+              )}
+              <div className="mt-3">
+                <BookRentalAction book={book} />
+              </div>
             </div>
 
             {book.description ? (

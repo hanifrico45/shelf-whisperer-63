@@ -21,18 +21,19 @@ import {
 } from "@/components/ui/select";
 import { currency } from "@/lib/inventory";
 import { addToCart, fetchShopBooks, fetchShopCategories } from "@/lib/shop";
+import { BookRentalAction } from "@/components/shop/BookRentalAction";
 
 const PAGE_SIZE = 12;
 
-export const Route = createFileRoute("/_shop/shop")({
+export const Route = createFileRoute("/_shop/shop/")({
   head: () => ({
     meta: [
-      { title: "Browse books — Bookshelf Store" },
+      { title: "Browse books — Mindthrills Resources" },
       {
         name: "description",
-        content: "Browse, search and buy books from the Bookshelf online bookstore.",
+        content: "Browse, search and buy books from Mindthrills Resources.",
       },
-      { property: "og:title", content: "Browse books — Bookshelf Store" },
+      { property: "og:title", content: "Browse books — Mindthrills Resources" },
       { property: "og:description", content: "Find your next read and check out in seconds." },
     ],
   }),
@@ -141,7 +142,9 @@ function ShopPage() {
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {booksQuery.isLoading
-            ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-72 rounded-xl" />
+              ))
             : rows.map((book) => {
                 const stock = book.inventory?.quantity ?? 0;
                 return (
@@ -195,6 +198,7 @@ function ShopPage() {
                           </>
                         )}
                       </Button>
+                      <BookRentalAction book={book} />
                     </div>
                   </div>
                 );

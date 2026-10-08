@@ -59,6 +59,7 @@ import {
   deleteBook,
   fetchBooks,
   fetchRefTable,
+  friendlyDbError,
   type BookRow,
 } from "@/lib/inventory";
 
@@ -67,9 +68,9 @@ const PAGE_SIZE = 10;
 export const Route = createFileRoute("/_authenticated/books")({
   head: () => ({
     meta: [
-      { title: "Books — Bookshelf Inventory" },
+      { title: "Books — Mindthrills Resources" },
       { name: "description", content: "Add, edit, archive and search every title in your store." },
-      { property: "og:title", content: "Books — Bookshelf Inventory" },
+      { property: "og:title", content: "Books — Mindthrills Resources" },
       { property: "og:description", content: "Manage your bookstore catalog and stock." },
     ],
   }),
@@ -102,13 +103,18 @@ function BooksPage() {
     return () => clearTimeout(timeout);
   }, [search]);
 
-  const categories = useQuery({ queryKey: ["categories"], queryFn: () => fetchRefTable("categories") });
-  const suppliers = useQuery({ queryKey: ["suppliers"], queryFn: () => fetchRefTable("suppliers") });
+  const categories = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => fetchRefTable("categories"),
+  });
+  const suppliers = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: () => fetchRefTable("suppliers"),
+  });
 
   const booksQuery = useQuery({
     queryKey: ["books", debounced, categoryId, status, page],
-    queryFn: () =>
-      fetchBooks({ search: debounced, categoryId, status, page, pageSize: PAGE_SIZE }),
+    queryFn: () => fetchBooks({ search: debounced, categoryId, status, page, pageSize: PAGE_SIZE }),
   });
 
   useEffect(() => {
@@ -261,6 +267,20 @@ function BooksPage() {
                   </TableCell>
                 </TableRow>
               ))
+            ) : booksQuery.error ? (
+              <TableRow>
+                <TableCell colSpan={9}>
+                  <div className="flex flex-col items-center gap-3 py-14 text-center">
+                    <p className="font-medium text-destructive">Could not load books</p>
+                    <p className="max-w-xl text-sm text-muted-foreground">
+                      {friendlyDbError(booksQuery.error)}
+                    </p>
+                    <Button variant="outline" onClick={() => void booksQuery.refetch()}>
+                      Try again
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9}>

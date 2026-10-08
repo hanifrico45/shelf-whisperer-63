@@ -19,9 +19,9 @@ import { ROLE_LABELS, type AppRole } from "@/lib/inventory";
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({
     meta: [
-      { title: "Team & roles — Bookshelf Inventory" },
+      { title: "Team & roles — Mindthrills Resources" },
       { name: "description", content: "Staff accounts and their assigned bookstore roles." },
-      { property: "og:title", content: "Team & roles — Bookshelf Inventory" },
+      { property: "og:title", content: "Team & roles — Mindthrills Resources" },
       { property: "og:description", content: "Staff accounts and assigned roles." },
     ],
   }),
@@ -37,7 +37,15 @@ function TeamPage() {
           .from("profiles")
           .select("id,full_name,email,phone,created_at")
           .order("created_at")
-          .returns<{ id: string; full_name: string | null; email: string | null; phone: string | null; created_at: string }[]>(),
+          .returns<
+            {
+              id: string;
+              full_name: string | null;
+              email: string | null;
+              phone: string | null;
+              created_at: string;
+            }[]
+          >(),
         supabase
           .from("user_roles")
           .select("user_id,role")

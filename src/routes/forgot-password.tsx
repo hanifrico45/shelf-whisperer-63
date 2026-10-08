@@ -24,9 +24,12 @@ export const Route = createFileRoute("/forgot-password")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Reset your password — Bookshelf" },
-      { name: "description", content: "Request a password reset link for your Bookshelf account." },
-      { property: "og:title", content: "Reset your password — Bookshelf" },
+      { title: "Reset your password — Mindthrills Resources" },
+      {
+        name: "description",
+        content: "Request a password reset link for your Mindthrills Resources account.",
+      },
+      { property: "og:title", content: "Reset your password — Mindthrills Resources" },
       { property: "og:description", content: "Request a password reset link." },
     ],
   }),
@@ -66,7 +69,9 @@ function ForgotPassword() {
               If an account exists for that email, a reset link is on its way.
             </p>
             <Button asChild className="mt-5 w-full">
-              <Link to="/auth">Back to sign in</Link>
+              <Link to="/auth" search={{ mode: "login", next: undefined }}>
+                Back to sign in
+              </Link>
             </Button>
           </div>
         ) : (
@@ -94,7 +99,9 @@ function ForgotPassword() {
                   {pending ? <Loader2 className="size-4 animate-spin" /> : "Send reset link"}
                 </Button>
                 <Button asChild variant="ghost" className="w-full">
-                  <Link to="/auth">Back to sign in</Link>
+                  <Link to="/auth" search={{ mode: "login", next: undefined }}>
+                    Back to sign in
+                  </Link>
                 </Button>
               </form>
             </Form>

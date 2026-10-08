@@ -14,8 +14,8 @@ export const Route = createFileRoute("/_shop/orders")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "My orders — Bookshelf Store" },
-      { name: "description", content: "Track the status of your Bookshelf book orders." },
+      { title: "My orders — Mindthrills Resources" },
+      { name: "description", content: "Track the status of your Mindthrills Resources orders." },
     ],
   }),
   component: OrdersPage,
@@ -39,7 +39,9 @@ function OrdersPage() {
         <div className="card-elevated mx-auto mt-8 max-w-lg p-6 text-center">
           <p className="text-sm text-muted-foreground">Sign in to see your orders.</p>
           <Button className="mt-4" asChild>
-            <Link to="/auth" search={{ mode: "login", next: "/orders" }}>Sign in</Link>
+            <Link to="/auth" search={{ mode: "login", next: "/orders" }}>
+              Sign in
+            </Link>
           </Button>
         </div>
       ) : ordersQuery.isLoading ? (
@@ -67,19 +69,25 @@ function OrdersPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="font-medium">{order.order_number}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(order.created_at).toLocaleString()}
+                  </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant={order.status === "delivered" ? "default" : "secondary"}>
                     {ORDER_STATUS_LABEL[order.status] ?? order.status}
                   </Badge>
-                  <span className="font-display text-lg font-semibold">{currency(Number(order.total))}</span>
+                  <span className="font-display text-lg font-semibold">
+                    {currency(Number(order.total))}
+                  </span>
                 </div>
               </div>
               <div className="mt-4 space-y-1 border-t border-border pt-3 text-sm">
                 {(order.sales?.sale_items ?? []).map((item) => (
                   <div key={item.id} className="flex justify-between gap-3">
-                    <span className="min-w-0 truncate text-muted-foreground">{item.quantity} × {item.title}</span>
+                    <span className="min-w-0 truncate text-muted-foreground">
+                      {item.quantity} × {item.title}
+                    </span>
                     <span>{currency(Number(item.line_total))}</span>
                   </div>
                 ))}
@@ -104,7 +112,10 @@ function OrderTracker({ status }: { status: string }) {
     <div className="mt-4 flex items-center gap-2">
       {STEPS.map((step, index) => (
         <div key={step} className="flex flex-1 flex-col gap-1">
-          <div className={`h-1.5 rounded-full ${index <= current ? "bg-primary" : "bg-muted"}`} aria-hidden />
+          <div
+            className={`h-1.5 rounded-full ${index <= current ? "bg-primary" : "bg-muted"}`}
+            aria-hidden
+          />
           <span className="text-[10px] capitalize text-muted-foreground">{step}</span>
         </div>
       ))}

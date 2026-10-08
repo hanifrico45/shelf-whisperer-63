@@ -1,7 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  BookOpen,
   LayoutDashboard,
   Library,
   History,
@@ -12,6 +11,7 @@ import {
   ScanLine,
   ReceiptText,
   Store,
+  BookCopy,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -39,6 +39,7 @@ const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Point of Sale", url: "/pos", icon: ScanLine },
   { title: "Books", url: "/books", icon: Library },
+  { title: "Rentals", url: "/rental-management", icon: BookCopy },
   { title: "Sales", url: "/sales", icon: ReceiptText },
   { title: "Activity", url: "/activity", icon: History },
   { title: "Team", url: "/team", icon: Users },
@@ -51,18 +52,20 @@ function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="px-3 py-4">
         <div className="flex items-center gap-2">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-brand text-primary-foreground">
-            <BookOpen className="size-5" />
-          </span>
+          <img
+            src="/images/mindthrills-resources-logo.png"
+            alt=""
+            className="size-10 shrink-0 rounded-full object-contain"
+          />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="truncate font-display text-base font-semibold">Bookshelf</p>
-            <p className="truncate text-xs text-muted-foreground">Inventory system</p>
+            <p className="truncate font-display text-base font-semibold">Mindthrills Resources</p>
+            <p className="truncate text-xs text-muted-foreground">Books &amp; learning resources</p>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupLabel>Store operations</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -76,7 +79,11 @@ function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith("/shop")} tooltip="View shop">
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/shop")}
+                  tooltip="View shop"
+                >
                   <Link to="/shop" className="flex items-center gap-2">
                     <Store className="size-4" />
                     <span>View shop</span>
@@ -88,7 +95,7 @@ function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="px-3 pb-4 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-        Phase 1 · Inventory foundation
+        Mindthrills Resources · Store operations
       </SidebarFooter>
     </Sidebar>
   );

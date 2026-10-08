@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_shop/checkout")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Checkout — Bookshelf Store" },
+      { title: "Checkout — Mindthrills Resources" },
       { name: "description", content: "Complete your book order with cash, card or transfer." },
     ],
   }),
@@ -52,7 +52,10 @@ function CheckoutPage() {
   }, [profileQuery.data, phone]);
 
   const rows = cartQuery.data ?? [];
-  const subtotal = rows.reduce((sum, r) => sum + Number(r.books?.selling_price ?? 0) * r.quantity, 0);
+  const subtotal = rows.reduce(
+    (sum, r) => sum + Number(r.books?.selling_price ?? 0) * r.quantity,
+    0,
+  );
   const tax = Math.round(subtotal * (TAX_RATE / 100) * 100) / 100;
   const total = subtotal + tax;
 
@@ -81,11 +84,16 @@ function CheckoutPage() {
           <CheckCircle2 className="mx-auto size-12 text-primary" />
           <h1 className="mt-4 font-display text-2xl font-semibold">Thank you for your order</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Order <span className="font-medium text-foreground">{placed.order_number}</span> · {currency(placed.total)}
+            Order <span className="font-medium text-foreground">{placed.order_number}</span> ·{" "}
+            {currency(placed.total)}
           </p>
           <div className="mt-6 flex justify-center gap-2">
-            <Button asChild><Link to="/orders">View my orders</Link></Button>
-            <Button variant="outline" asChild><Link to="/shop">Keep browsing</Link></Button>
+            <Button asChild>
+              <Link to="/orders">View my orders</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/shop">Keep browsing</Link>
+            </Button>
           </div>
         </div>
       </ShopShell>
@@ -108,21 +116,29 @@ function CheckoutPage() {
           <Skeleton className="mt-6 h-72 rounded-xl" />
         ) : rows.length === 0 ? (
           <div className="mt-10 rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-            Your cart is empty. <Link to="/shop" className="underline">Browse books</Link>
+            Your cart is empty.{" "}
+            <Link to="/shop" className="underline">
+              Browse books
+            </Link>
           </div>
         ) : (
           <div className="mx-auto mt-8 max-w-lg card-elevated p-6 text-center">
             <h2 className="font-display text-xl font-semibold">Sign in to complete your order</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Your {rows.reduce((sum, row) => sum + row.quantity, 0)} cart items will be saved after you sign in or create an account.
+              Your {rows.reduce((sum, row) => sum + row.quantity, 0)} cart items will be saved after
+              you sign in or create an account.
             </p>
             <p className="mt-4 font-display text-2xl font-semibold">{currency(total)}</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <Button size="lg" asChild>
-                <Link to="/auth" search={{ mode: "login", next: "/checkout" }}>Sign in</Link>
+                <Link to="/auth" search={{ mode: "login", next: "/checkout" }}>
+                  Sign in
+                </Link>
               </Button>
               <Button size="lg" variant="secondary" asChild>
-                <Link to="/auth" search={{ mode: "register", next: "/checkout" }}>Create account</Link>
+                <Link to="/auth" search={{ mode: "register", next: "/checkout" }}>
+                  Create account
+                </Link>
               </Button>
             </div>
             <Button variant="link" className="mt-3" asChild>
@@ -140,13 +156,17 @@ function CheckoutPage() {
     <ShopShell>
       <h1 className="font-display text-2xl font-semibold">Checkout</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Signed in as {profileQuery.data?.full_name || userQuery.data.email}. Add your delivery details below.
+        Signed in as {profileQuery.data?.full_name || userQuery.data.email}. Add your delivery
+        details below.
       </p>
       {cartQuery.isLoading ? (
         <Skeleton className="mt-6 h-72 rounded-xl" />
       ) : rows.length === 0 ? (
         <div className="mt-10 rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-          Your cart is empty. <Link to="/shop" className="underline">Browse books</Link>
+          Your cart is empty.{" "}
+          <Link to="/shop" className="underline">
+            Browse books
+          </Link>
         </div>
       ) : (
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -154,21 +174,46 @@ function CheckoutPage() {
             <h2 className="font-display text-lg font-semibold">Delivery details</h2>
             <div className="space-y-2">
               <Label htmlFor="address">Shipping address</Label>
-              <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, city, state" rows={3} />
+              <Textarea
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Street, city, state"
+                rows={3}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Contact phone</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 0803 000 1234" />
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="e.g. 0803 000 1234"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Order notes (optional)</Label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Delivery instructions" />
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+                placeholder="Delivery instructions"
+              />
             </div>
             <div className="space-y-2 pt-2">
               <Label>Payment method</Label>
-              <RadioGroup value={method} onValueChange={(v) => setMethod(v as typeof method)} className="grid gap-2 sm:grid-cols-3">
+              <RadioGroup
+                value={method}
+                onValueChange={(v) => setMethod(v as typeof method)}
+                className="grid gap-2 sm:grid-cols-3"
+              >
                 {(["card", "cash", "transfer"] as const).map((m) => (
-                  <Label key={m} htmlFor={`pay-${m}`} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm capitalize has-[:checked]:border-primary">
+                  <Label
+                    key={m}
+                    htmlFor={`pay-${m}`}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm capitalize has-[:checked]:border-primary"
+                  >
                     <RadioGroupItem id={`pay-${m}`} value={m} />
                     {m === "cash" ? "Cash on delivery" : m}
                   </Label>
@@ -181,18 +226,39 @@ function CheckoutPage() {
             <div className="mt-4 space-y-2 text-sm">
               {rows.map((row) => (
                 <div key={row.id} className="flex justify-between gap-3">
-                  <span className="min-w-0 truncate text-muted-foreground">{row.quantity} × {row.books?.title}</span>
+                  <span className="min-w-0 truncate text-muted-foreground">
+                    {row.quantity} × {row.books?.title}
+                  </span>
                   <span>{currency(Number(row.books?.selling_price ?? 0) * row.quantity)}</span>
                 </div>
               ))}
             </div>
             <div className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{currency(subtotal)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Tax ({TAX_RATE}%)</span><span>{currency(tax)}</span></div>
-              <div className="flex justify-between font-display text-lg font-semibold"><span>Total</span><span>{currency(total)}</span></div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>{currency(subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tax ({TAX_RATE}%)</span>
+                <span>{currency(tax)}</span>
+              </div>
+              <div className="flex justify-between font-display text-lg font-semibold">
+                <span>Total</span>
+                <span>{currency(total)}</span>
+              </div>
             </div>
-            <Button className="mt-5 w-full" disabled={!canSubmit || orderMutation.isPending} onClick={() => orderMutation.mutate()}>
-              {orderMutation.isPending ? (<><Loader2 className="size-4 animate-spin" /> Placing order…</>) : "Place order"}
+            <Button
+              className="mt-5 w-full"
+              disabled={!canSubmit || orderMutation.isPending}
+              onClick={() => orderMutation.mutate()}
+            >
+              {orderMutation.isPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" /> Placing order…
+                </>
+              ) : (
+                "Place order"
+              )}
             </Button>
           </div>
         </div>

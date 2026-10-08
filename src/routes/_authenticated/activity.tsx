@@ -19,9 +19,9 @@ import { fetchAuditLogs } from "@/lib/inventory";
 export const Route = createFileRoute("/_authenticated/activity")({
   head: () => ({
     meta: [
-      { title: "Activity log — Bookshelf Inventory" },
+      { title: "Activity log — Mindthrills Resources" },
       { name: "description", content: "Full audit trail of every inventory action by staff." },
-      { property: "og:title", content: "Activity log — Bookshelf Inventory" },
+      { property: "og:title", content: "Activity log — Mindthrills Resources" },
       { property: "og:description", content: "Audit trail of inventory actions." },
     ],
   }),

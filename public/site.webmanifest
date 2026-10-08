@@ -1,0 +1,13 @@
+{
+  "name": "Mindthrills Resources",
+  "short_name": "Mindthrills Resources",
+  "description": "Books and learning resources from Mindthrills Resources.",
+  "start_url": "/shop",
+  "display": "standalone",
+  "background_color": "#f7faf6",
+  "theme_color": "#35734e",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

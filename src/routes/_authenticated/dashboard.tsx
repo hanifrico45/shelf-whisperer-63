@@ -13,15 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  AlertTriangle,
-  BookCopy,
-  Library,
-  PackageX,
-  Receipt,
-  Wallet,
-  History,
-} from "lucide-react";
+import { AlertTriangle, BookCopy, Library, PackageX, Receipt, Wallet, History } from "lucide-react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,9 +25,9 @@ import { fetchSales, fetchSalesSummary } from "@/lib/pos";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Bookshelf Inventory" },
+      { title: "Dashboard — Mindthrills Resources" },
       { name: "description", content: "Stock value, low stock alerts and recent staff activity." },
-      { property: "og:title", content: "Dashboard — Bookshelf Inventory" },
+      { property: "og:title", content: "Dashboard — Mindthrills Resources" },
       { property: "og:description", content: "Stock value, alerts and recent activity." },
     ],
   }),
@@ -111,14 +103,49 @@ function DashboardPage() {
   const todayRevenue = todaySales.reduce((sum, s) => sum + Number(s.total), 0);
 
   const cards = [
-    { label: "Sales Today", value: todaySales.length.toString(), icon: Receipt, hint: "completed checkouts" },
+    {
+      label: "Sales Today",
+      value: todaySales.length.toString(),
+      icon: Receipt,
+      hint: "completed checkouts",
+    },
     { label: "Revenue Today", value: currency(todayRevenue), icon: Wallet, hint: "gross takings" },
-    { label: "Total Books", value: totalCopies.toLocaleString(), icon: BookCopy, hint: "copies in stock" },
-    { label: "Different Titles", value: books.length.toLocaleString(), icon: Library, hint: "unique SKUs" },
-    { label: "Inventory Value", value: currency(inventoryValue), icon: Wallet, hint: "at purchase cost" },
-    { label: "Retail Value", value: currency(retailValue), icon: Receipt, hint: "at selling price" },
-    { label: "Low Stock", value: lowStock.toString(), icon: AlertTriangle, hint: "at or below minimum" },
-    { label: "Out of Stock", value: outOfStock.toString(), icon: PackageX, hint: "need reordering" },
+    {
+      label: "Total Books",
+      value: totalCopies.toLocaleString(),
+      icon: BookCopy,
+      hint: "copies in stock",
+    },
+    {
+      label: "Different Titles",
+      value: books.length.toLocaleString(),
+      icon: Library,
+      hint: "unique SKUs",
+    },
+    {
+      label: "Inventory Value",
+      value: currency(inventoryValue),
+      icon: Wallet,
+      hint: "at purchase cost",
+    },
+    {
+      label: "Retail Value",
+      value: currency(retailValue),
+      icon: Receipt,
+      hint: "at selling price",
+    },
+    {
+      label: "Low Stock",
+      value: lowStock.toString(),
+      icon: AlertTriangle,
+      hint: "at or below minimum",
+    },
+    {
+      label: "Out of Stock",
+      value: outOfStock.toString(),
+      icon: PackageX,
+      hint: "need reordering",
+    },
   ];
 
   const summary = summaryQuery.data;
@@ -138,7 +165,9 @@ function DashboardPage() {
     <AppShell title="Dashboard" description="Live snapshot of your bookstore inventory">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {booksQuery.isLoading
-          ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 rounded-xl" />
+            ))
           : cards.map((card) => (
               <div key={card.label} className="card-elevated p-5">
                 <div className="flex items-start justify-between">
@@ -191,9 +220,17 @@ function DashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topTitles}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--color-border)"
+                    vertical={false}
+                  />
                   <XAxis dataKey="name" fontSize={12} stroke="var(--color-muted-foreground)" />
-                  <YAxis fontSize={12} stroke="var(--color-muted-foreground)" allowDecimals={false} />
+                  <YAxis
+                    fontSize={12}
+                    stroke="var(--color-muted-foreground)"
+                    allowDecimals={false}
+                  />
                   <Tooltip
                     contentStyle={{
                       background: "var(--color-popover)",
@@ -216,7 +253,9 @@ function DashboardPage() {
           </div>
           <div className="mt-4 space-y-3">
             {auditQuery.isLoading ? (
-              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)
+              Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 rounded-lg" />
+              ))
             ) : (auditQuery.data ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No activity yet. Inventory changes will appear here.

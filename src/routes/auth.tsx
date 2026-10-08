@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BookOpen, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -45,8 +45,8 @@ export const Route = createFileRoute("/auth")({
   },
   head: () => ({
     meta: [
-      { title: "Sign in — Bookshelf" },
-      { name: "description", content: "Sign in or create your Bookshelf account." },
+      { title: "Sign in — Mindthrills Resources" },
+      { name: "description", content: "Sign in or create your Mindthrills Resources account." },
     ],
   }),
   component: AuthPage,
@@ -156,8 +156,12 @@ function AuthPage() {
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden bg-gradient-brand p-12 text-primary-foreground lg:flex lg:flex-col lg:justify-between">
         <div className="flex items-center gap-2">
-          <BookOpen className="size-6" />
-          <span className="font-display text-xl font-semibold">Bookshelf</span>
+          <img
+            src="/images/mindthrills-resources-logo.png"
+            alt=""
+            className="size-10 rounded-full object-contain"
+          />
+          <span className="font-display text-xl font-semibold">Mindthrills Resources</span>
         </div>
         <div>
           <h2 className="max-w-md font-display text-4xl font-semibold leading-tight">
@@ -167,17 +171,27 @@ function AuthPage() {
             Browse freely. Sign in only when you want your account or checkout.
           </p>
         </div>
-        <p className="text-xs opacity-70">Bookshelf Store</p>
+        <p className="text-xs opacity-70">Mindthrills Resources</p>
       </div>
       <div className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
+          <div className="mb-6 flex items-center justify-center gap-2 lg:hidden">
+            <img
+              src="/images/mindthrills-resources-logo.png"
+              alt=""
+              className="size-10 rounded-full object-contain"
+            />
+            <span className="font-display text-lg font-semibold">Mindthrills Resources</span>
+          </div>
           {emailSent ? (
             <div className="card-elevated p-6 text-center">
               <h2 className="font-display text-xl font-semibold">Confirm your email</h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 We sent a confirmation link. After you confirm, come back here and sign in.
               </p>
-              <Button className="mt-5 w-full" onClick={() => setEmailSent(false)}>Back to sign in</Button>
+              <Button className="mt-5 w-full" onClick={() => setEmailSent(false)}>
+                Back to sign in
+              </Button>
             </div>
           ) : (
             <Tabs defaultValue={mode}>
@@ -194,23 +208,49 @@ function AuthPage() {
                 </p>
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLogin)} className="mt-6 space-y-4">
-                    <FormField control={loginForm.control} name="email" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl><Input type="email" placeholder="you@email.com" autoComplete="email" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={loginForm.control} name="password" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl><PasswordInput placeholder="Your password" autoComplete="current-password" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
+                    <FormField
+                      control={loginForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="you@email.com"
+                              autoComplete="email"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={loginForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <PasswordInput
+                              placeholder="Your password"
+                              autoComplete="current-password"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
                     <div className="text-right">
-                      <Link to="/forgot-password" className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Forgot password?</Link>
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
                     </div>
                     <Button type="submit" className="w-full" disabled={pending}>
                       {pending ? <Loader2 className="size-4 animate-spin" /> : "Sign in"}
@@ -225,34 +265,72 @@ function AuthPage() {
                 </p>
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegister)} className="mt-6 space-y-4">
-                    <FormField control={registerForm.control} name="fullName" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full name</FormLabel>
-                        <FormControl><Input placeholder="Ada Okoro" autoComplete="name" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={registerForm.control} name="phone" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone number</FormLabel>
-                        <FormControl><Input type="tel" placeholder="e.g. 0803 000 1234" autoComplete="tel" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={registerForm.control} name="email" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl><Input type="email" placeholder="you@email.com" autoComplete="email" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={registerForm.control} name="password" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl><PasswordInput placeholder="At least 6 characters" autoComplete="new-password" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
+                    <FormField
+                      control={registerForm.control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ada Okoro" autoComplete="name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone number</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="tel"
+                              placeholder="e.g. 0803 000 1234"
+                              autoComplete="tel"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="you@email.com"
+                              autoComplete="email"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <PasswordInput
+                              placeholder="At least 6 characters"
+                              autoComplete="new-password"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
                     <Button type="submit" className="w-full" disabled={pending}>
                       {pending ? <Loader2 className="size-4 animate-spin" /> : "Create account"}

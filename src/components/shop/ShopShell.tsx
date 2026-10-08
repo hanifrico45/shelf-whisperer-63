@@ -1,7 +1,16 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
-import { BookOpen, LayoutDashboard, LogOut, Moon, ShoppingCart, Sun, User, Package } from "lucide-react";
+import {
+  BookOpen,
+  LayoutDashboard,
+  LogOut,
+  Moon,
+  ShoppingCart,
+  Sun,
+  User,
+  Package,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
@@ -53,10 +62,17 @@ export function ShopShell({ children }: { children: ReactNode }) {
         queryClient.invalidateQueries({ queryKey: ["cart"] });
         return;
       }
-      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+      if (
+        event === "INITIAL_SESSION" ||
+        event === "SIGNED_IN" ||
+        event === "TOKEN_REFRESHED" ||
+        event === "USER_UPDATED"
+      ) {
         if (session?.user) queryClient.setQueryData(["current-user"], session.user);
-        queryClient.invalidateQueries({ queryKey: ["cart"] });
-        queryClient.invalidateQueries({ queryKey: ["my-roles"] });
+        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+          queryClient.invalidateQueries({ queryKey: ["cart"] });
+          queryClient.invalidateQueries({ queryKey: ["my-roles"] });
+        }
       }
     });
     return () => data.subscription.unsubscribe();
@@ -105,6 +121,7 @@ export function ShopShell({ children }: { children: ReactNode }) {
 
   const customerNav = [
     { to: "/shop", label: "Shop", icon: BookOpen },
+    { to: "/rentals", label: "Book Rental", icon: BookOpen },
     { to: "/orders", label: "Orders", icon: Package },
     { to: "/account", label: "Account", icon: User },
   ] as const;
@@ -114,10 +131,14 @@ export function ShopShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4">
           <Link to="/shop" className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-gradient-brand text-primary-foreground">
-              <BookOpen className="size-5" />
+            <img
+              src="/images/mindthrills-resources-logo.png"
+              alt=""
+              className="size-9 shrink-0 rounded-full object-contain"
+            />
+            <span className="max-w-[148px] font-display text-sm font-semibold leading-tight sm:max-w-none sm:text-lg">
+              Mindthrills Resources
             </span>
-            <span className="font-display text-lg font-semibold">Bookshelf</span>
           </Link>
 
           <nav className="ml-4 hidden items-center gap-1 sm:flex">
@@ -130,19 +151,31 @@ export function ShopShell({ children }: { children: ReactNode }) {
             >
               Shop
             </Link>
+            <Link
+              to="/rentals"
+              className={cn(
+                "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+                pathname.startsWith("/rentals") && "bg-secondary text-foreground",
+              )}
+            >
+              Book Rental
+            </Link>
             {isAuthenticated &&
-              customerNav.slice(1).map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={cn(
-                    "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                    pathname === item.to && "bg-secondary text-foreground",
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              customerNav
+                .slice(1)
+                .filter((item) => item.to !== "/rentals")
+                .map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+                      pathname === item.to && "bg-secondary text-foreground",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
           </nav>
 
           <div className="ml-auto flex items-center gap-1">
@@ -164,12 +197,12 @@ export function ShopShell({ children }: { children: ReactNode }) {
             {!isAuthenticated && (
               <>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/auth" search={{ mode: "login" }}>
+                  <Link to="/auth" search={{ mode: "login", next: undefined }}>
                     Sign in
                   </Link>
                 </Button>
                 <Button size="sm" asChild>
-                  <Link to="/auth" search={{ mode: "register" }}>
+                  <Link to="/auth" search={{ mode: "register", next: undefined }}>
                     Sign up
                   </Link>
                 </Button>
@@ -204,27 +237,45 @@ export function ShopShell({ children }: { children: ReactNode }) {
             <BookOpen className="size-3.5" />
             Shop
           </Link>
+          <Link
+            to="/rentals"
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground",
+              pathname.startsWith("/rentals") && "bg-secondary text-foreground",
+            )}
+          >
+            <BookOpen className="size-3.5" />
+            Rental
+          </Link>
           {isAuthenticated &&
-            customerNav.slice(1).map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground",
-                  pathname === item.to && "bg-secondary text-foreground",
-                )}
-              >
-                <item.icon className="size-3.5" />
-                {item.label}
-              </Link>
-            ))}
+            customerNav
+              .slice(1)
+              .filter((item) => item.to !== "/rentals")
+              .map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground",
+                    pathname === item.to && "bg-secondary text-foreground",
+                  )}
+                >
+                  <item.icon className="size-3.5" />
+                  {item.label}
+                </Link>
+              ))}
         </nav>
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
 
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        Bookshelf · Your neighbourhood bookstore, online.
+      <footer className="flex items-center justify-center gap-2 border-t border-border py-6 text-xs text-muted-foreground">
+        <img
+          src="/images/mindthrills-resources-logo.png"
+          alt=""
+          className="size-7 rounded-full object-contain"
+        />
+        <span>Mindthrills Resources · Your neighbourhood bookstore, online.</span>
       </footer>
     </div>
   );
