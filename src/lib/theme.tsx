@@ -13,7 +13,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = window.localStorage.getItem("bookshelf-theme") as Theme | null;
     const initial =
-      stored ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      stored ?? "light";
     setTheme(initial);
   }, []);
 
