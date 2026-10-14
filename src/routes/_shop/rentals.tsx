@@ -120,7 +120,7 @@ function RentalsPage() {
     queryFn: async () => {
       const { data, error } = await db
         .from("rentals")
-        .select("*,books(title,author,cover_url),rental_payments(id,payment_type,amount,status)")
+        .select("*,books(title,author,cover_url),rental_payments!rental_payments_rental_fk(id,payment_type,amount,status)")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       if (error) throw error;
