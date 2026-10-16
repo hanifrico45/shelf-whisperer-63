@@ -211,7 +211,12 @@ export async function importCatalog(rows: CatalogRow[], categories: { id: string
     if ((isbnKey && existing.has(isbnKey)) || existing.has(nameKey)) skipped++;
     else {
       try {
-        await createBook(values);
+        const id = await createBook(values);
+        if (item.row.description) {
+          const { error: descriptionError } = await supabase.from("books")
+            .update({ description: item.row.description }).eq("id", id);
+          if (descriptionError) throw new Error("Book created, but description could not be saved: " + descriptionError.message);
+        }
         created++;
         existing.add(nameKey); if (isbnKey) existing.add(isbnKey);
       } catch (error) {
