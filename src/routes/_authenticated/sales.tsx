@@ -92,6 +92,7 @@ function SalesPage() {
             aria-label="Search sales"
           />
         </div>
+        <Button variant="outline" className="mt-2" onClick={() => { setDebounced(search); setPage(0); }}><Search className="size-4" /> Search</Button>
 
         <div className="mt-4 overflow-x-auto">
           {salesQuery.isLoading ? (
