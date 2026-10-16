@@ -175,7 +175,7 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
     );
   }
 
-  if (isUnavailable) {
+  if (isUnavailable && !createdRentalId) {
     return (
       <div className="space-y-1">
         <Button
