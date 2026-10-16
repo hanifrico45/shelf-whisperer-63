@@ -42,7 +42,7 @@ export const Route = createFileRoute("/_shop/shop/")({
 
 function ShopPage() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("search") ?? "");
   const [categoryId, setCategoryId] = useState("all");
   const [sort, setSort] = useState<"title" | "price_asc" | "price_desc">("title");
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -90,6 +90,7 @@ function ShopPage() {
             placeholder="Search title, author or ISBN"
             className="pl-9"
           />
+          <Button type="button" variant="outline" onClick={() => setPage(0)} aria-label="Search books"><Search className="size-4" /> Search</Button>
         </div>
         <Select
           value={categoryId}
