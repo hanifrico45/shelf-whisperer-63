@@ -365,7 +365,7 @@ function RentalManagementPage() {
                         onClick={() => {
                           if (
                             !window.confirm(
-                              "Confirm that the membership fee and the ₦5,000 refundable security deposit have both been received before activating this membership.",
+                              `Confirm that the membership fee (₦${Number(m.fee).toLocaleString("en-NG")}) and the refundable security deposit (₦${Number(m.deposit_required).toLocaleString("en-NG")}) have both been received before activating this membership.`,
                             )
                           )
                             return;
