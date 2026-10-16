@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Package } from "lucide-react";
+import { Package, Search } from "lucide-react";
 
 import { ShopShell } from "@/components/shop/ShopShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currency } from "@/lib/inventory";
 import { fetchMyOrders, ORDER_STATUS_LABEL } from "@/lib/shop";
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/_shop/orders")({
 });
 
 function OrdersPage() {
+  const [orderSearch, setOrderSearch] = useState("");
   const userQuery = useQuery(currentUserQuery);
   const ordersQuery = useQuery({
     queryKey: ["my-orders", userQuery.data?.id],
@@ -29,10 +32,24 @@ function OrdersPage() {
     enabled: !!userQuery.data,
   });
   const orders = ordersQuery.data ?? [];
+  const visibleOrders = orders.filter((order) =>
+    !orderSearch.trim() ||
+    [order.order_number, order.status, ...(order.sales?.sale_items ?? []).map((item) => item.title)]
+      .some((value) => String(value ?? "").toLowerCase().includes(orderSearch.trim().toLowerCase()))
+  );
 
   return (
     <ShopShell>
-      <h1 className="font-display text-2xl font-semibold">My orders</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="font-display text-2xl font-semibold">My orders</h1>
+        {!!userQuery.data && (
+          <form role="search" className="flex w-full gap-2 sm:w-auto" onSubmit={(e) => e.preventDefault()}>
+            <Input value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)}
+              placeholder="Search order number or book" aria-label="Search my orders" className="sm:w-64" />
+            <Button variant="outline" type="submit"><Search className="size-4" /> Search</Button>
+          </form>
+        )}
+      </div>
       {userQuery.isLoading && !userQuery.data ? (
         <Skeleton className="mt-6 h-32 rounded-xl" />
       ) : !userQuery.data ? (
@@ -64,7 +81,8 @@ function OrdersPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          {orders.map((order) => (
+          {visibleOrders.length === 0 && <p className="text-sm text-muted-foreground">No orders match your search.</p>}
+          {visibleOrders.map((order) => (
             <div key={order.id} className="card-elevated p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
