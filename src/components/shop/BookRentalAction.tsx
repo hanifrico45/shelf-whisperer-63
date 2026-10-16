@@ -264,10 +264,10 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
                   {membershipRequestType === "single" ? "Single Membership" : "Family Membership"}
                 </p>
                 <p className="text-lg font-semibold">
-                  {money(membershipRequestType === "single" ? 3000 : 7000)} / year
+                  {money(membershipRequestType === "single" ? 5000 : 10000)} / year
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Plus a separate {money(5000)} refundable security deposit.
+                  Plus a separate {money(membershipRequestType === "single" ? 10000 : 20000)} refundable security deposit.
                 </p>
               </div>
               <Button asChild className="w-full">
@@ -283,8 +283,8 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
             <div className="grid gap-3 sm:grid-cols-2">
               {(
                 [
-                  ["single", "Single Membership", 3000],
-                  ["family", "Family Membership", 7000],
+                  ["single", "Single Membership", 5000],
+                  ["family", "Family Membership", 10000],
                 ] as const
               ).map(([type, title, fee]) => (
                 <button
@@ -297,7 +297,7 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
                   <span className="block font-medium">{title}</span>
                   <span className="mt-1 block text-lg font-semibold">{money(fee)} / year</span>
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    Plus a separate {money(5000)} refundable deposit
+                    Plus a separate {money(type === "single" ? 10000 : 20000)} refundable deposit
                   </span>
                 </button>
               ))}
