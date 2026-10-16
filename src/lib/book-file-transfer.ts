@@ -100,7 +100,7 @@ export async function readCatalogFile(file: File): Promise<CatalogRow[]> {
   const text = await file.text();
   if (name.endsWith(".csv")) return matrixToCatalog(parseCsv(text));
   if (name.endsWith(".xls") || name.endsWith(".xml")) return matrixToCatalog(excelXmlRows(text));
-  if (name.endsWith(".doc") || name.endsWith(".html")) return matrixToCatalog(wordRows(text));
+  if (name.endsWith(".doc") || name.endsWith(".html") || name.endsWith(".htm")) return matrixToCatalog(wordRows(text));
   if (name.endsWith(".xlsx") || name.endsWith(".docx"))
     throw new Error("For .xlsx or .docx, use Save As → CSV (Excel) or HTML/Web Page (Word), then import that file.");
   throw new Error("Supported imports: CSV, Excel XML (.xls/.xml), and Word HTML (.doc/.html).");
