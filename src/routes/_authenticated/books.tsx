@@ -226,6 +226,7 @@ function BooksPage() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => void exportBooks("csv")}>CSV (.csv)</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => downloadCatalog([], "csv")}>Blank CSV import template</DropdownMenuItem>
           <DropdownMenuItem onClick={() => void exportBooks("excel")}>Excel (.xls)</DropdownMenuItem>
           <DropdownMenuItem onClick={() => void exportBooks("word")}>Word (.doc)</DropdownMenuItem>
         </DropdownMenuContent>
