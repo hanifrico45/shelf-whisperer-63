@@ -203,6 +203,7 @@ function BooksPage() {
               className="pl-9"
             />
           </div>
+          <Button variant="outline" onClick={() => { setDebounced(search); setPage(0); }}><Search className="size-4" /> Search</Button>
           <Select
             value={categoryId}
             onValueChange={(v) => {
