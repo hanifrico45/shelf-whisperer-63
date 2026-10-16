@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   BookOpen,
   LayoutDashboard,
@@ -10,10 +10,12 @@ import {
   Sun,
   User,
   Package,
+  Search,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/lib/theme";
 import { getCurrentUser, logAuthEvent } from "@/lib/auth";
@@ -24,6 +26,8 @@ import { cn } from "@/lib/utils";
 
 export function ShopShell({ children }: { children: ReactNode }) {
   const { theme, toggleTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [siteSearch, setSiteSearch] = useState("");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -179,6 +183,9 @@ export function ShopShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => setSearchOpen((open) => !open)} aria-label="Search books">
+              <Search className="size-4" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
@@ -265,6 +272,19 @@ export function ShopShell({ children }: { children: ReactNode }) {
                 </Link>
               ))}
         </nav>
+        {searchOpen && (
+          <form
+            role="search"
+            className="mx-auto flex w-full max-w-6xl gap-2 px-4 pb-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              window.location.assign("/shop?search=" + encodeURIComponent(siteSearch.trim()));
+            }}
+          >
+            <Input autoFocus aria-label="Search shop books" placeholder="Search books by title, author or ISBN" value={siteSearch} onChange={(event) => setSiteSearch(event.target.value)} />
+            <Button type="submit"><Search className="size-4" /> Search</Button>
+          </form>
+        )}
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
