@@ -34,6 +34,7 @@ export const Route = createFileRoute("/_shop/rentals")({
 function RentalsPage() {
   const client = useQueryClient();
   const [search, setSearch] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
   const [membershipRequestType, setMembershipRequestType] = useState<"single" | "family" | null>(
     null,
   );
@@ -421,20 +422,30 @@ function RentalsPage() {
 
       {!!user.data && (
         <section className="mt-10">
-          <h2 className="font-display text-2xl font-semibold">My Rentals</h2>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="font-display text-2xl font-semibold">My Rentals</h2>
+            <div className="flex w-full gap-2 sm:w-auto">
+              <Input aria-label="Search my rentals" placeholder="Search my books or rental status" value={historySearch}
+                onChange={(event) => setHistorySearch(event.target.value)} className="sm:w-64" />
+              <Button variant="outline" aria-label="Search my rental history" onClick={() => document.getElementById("my-rental-results")?.scrollIntoView({ behavior: "smooth" })}>
+                <Search className="size-4" /> Search
+              </Button>
+            </div>
+          </div>
+          <div id="my-rental-results" />
           {rentals.isLoading ? (
             <Skeleton className="mt-4 h-24" />
           ) : rentals.error ? (
             <p className="mt-3 text-sm text-destructive">
               Could not load your rentals: {rentals.error.message}
             </p>
-          ) : (rentals.data ?? []).length === 0 ? (
+          ) : (rentals.data ?? []).filter((r: any) => !historySearch.trim() || `${r.books?.title ?? ""} ${r.books?.author ?? ""} ${r.status ?? ""}`.toLowerCase().includes(historySearch.trim().toLowerCase())).length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
               Your rental history will appear here.
             </p>
           ) : (
             <div className="mt-4 grid gap-3">
-              {rentals.data.map((r: any) => {
+              {rentals.data.filter((r: any) => !historySearch.trim() || `${r.books?.title ?? ""} ${r.books?.author ?? ""} ${r.status ?? ""}`.toLowerCase().includes(historySearch.trim().toLowerCase())).map((r: any) => {
                 const report = (conditionReports.data ?? []).find((x: any) => x.rental_id === r.id);
                 return (
                   <article
