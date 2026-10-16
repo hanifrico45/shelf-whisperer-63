@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -20,6 +20,7 @@ import { CoverImage } from "@/components/books/CoverImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -53,6 +54,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { downloadCatalog, importCatalog, loadCatalogExport, readCatalogFile, validateCatalog, type CatalogRow } from "@/lib/book-file-transfer";
 import {
   archiveBook,
   currency,
@@ -94,6 +96,12 @@ function BooksPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<BookRow | null>(null);
   const [pendingDelete, setPendingDelete] = useState<BookRow | null>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<CatalogRow[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [transferBusy, setTransferBusy] = useState(false);
+  const [importProgress, setImportProgress] = useState("");
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -157,41 +165,108 @@ function BooksPage() {
   const total = booksQuery.data?.count ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const headerActions = useMemo(
-    () => (
-      <>
-        <Button
-          variant="outline"
-          size="sm"
-          className="hidden sm:inline-flex"
-          onClick={() => toast.info("CSV import lands in a later phase")}
-        >
-          <Upload className="size-4" /> Import
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="hidden sm:inline-flex"
-          onClick={() => toast.info("CSV export lands in a later phase")}
-        >
-          <Download className="size-4" /> Export
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="size-4" /> Add book
-        </Button>
-      </>
-    ),
-    [],
+  const inspection = validateCatalog(importRows, categories.data ?? []);
+  const invalidRows = inspection.filter((item) => item.error);
+  const exportBooks = async (format: "csv" | "excel" | "word") => {
+    try {
+      setTransferBusy(true);
+      const books = await loadCatalogExport();
+      downloadCatalog(books, format);
+      toast.success(`Exported ${books.length} books`);
+    } catch (error) {
+      toast.error(friendlyDbError(error));
+    } finally {
+      setTransferBusy(false);
+    }
+  };
+  const selectImport = async (file?: File) => {
+    if (!file) return;
+    try {
+      const parsed = await readCatalogFile(file);
+      setImportRows(parsed);
+      setImportFileName(file.name);
+      setImportOpen(true);
+      setImportProgress("");
+    } catch (error) {
+      toast.error(friendlyDbError(error));
+    } finally {
+      if (importRef.current) importRef.current.value = "";
+    }
+  };
+  const confirmImport = async () => {
+    try {
+      if (invalidRows.length) throw new Error("Fix the invalid rows before importing.");
+      if (!window.confirm(`Import ${importRows.length} book rows? Existing books will be skipped, never overwritten.`)) return;
+      setTransferBusy(true);
+      const result = await importCatalog(importRows, categories.data ?? [], (done, count) => setImportProgress(`${done} / ${count}`));
+      queryClient.invalidateQueries({ queryKey: ["books"] });
+      queryClient.invalidateQueries({ queryKey: ["books-light"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-books"] });
+      toast.success(`Created ${result.created} books; skipped ${result.skipped} duplicates.`);
+      if (result.failures.length) toast.error(result.failures.slice(0, 3).join(" | "));
+      if (!result.failures.length) { setImportOpen(false); setImportRows([]); }
+    } catch (error) {
+      toast.error(friendlyDbError(error));
+    } finally {
+      setTransferBusy(false);
+    }
+  };
+  const headerActions = (
+    <>
+      <input ref={importRef} type="file" accept=".csv,.xls,.xml,.doc,.html,.htm" className="hidden"
+        aria-label="Choose catalog import file" onChange={(event) => void selectImport(event.target.files?.[0])} />
+      <Button variant="outline" size="sm" disabled={transferBusy} onClick={() => importRef.current?.click()}>
+        <Upload className="size-4" /> Import
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" disabled={transferBusy}>
+            <Download className="size-4" /> Export
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => void exportBooks("csv")}>CSV (.csv)</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => void exportBooks("excel")}>Excel (.xls)</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => void exportBooks("word")}>Word (.doc)</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }}>
+        <Plus className="size-4" /> Add book
+      </Button>
+    </>
   );
 
   return (
     <AppShell title="Books" description="Catalog, pricing and stock levels" actions={headerActions}>
+      <Dialog open={importOpen} onOpenChange={(open) => { if (!transferBusy) setImportOpen(open); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import books — preview first</DialogTitle>
+            <DialogDescription>
+              {importFileName}: {importRows.length} rows. New books only; existing books and stock are never overwritten.
+              Required columns: title, author, selling_price. Missing optional costs and quantities default to zero.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm">Valid: {inspection.length - invalidRows.length} · Invalid: {invalidRows.length}</p>
+          <div className="max-h-56 overflow-auto rounded-md border p-3 text-sm">
+            {inspection.slice(0, 12).map((item) => (
+              <p key={item.index} className={item.error ? "text-destructive" : ""}>
+                Row {item.index}: {item.row.title || "(untitled)"} — {item.row.author || "(unknown author)"}
+                {item.error ? ` — ${item.error}` : ""}
+              </p>
+            ))}
+            {invalidRows.length > 12 && <p className="text-destructive">More errors: {invalidRows.length - 12}</p>}
+            {inspection.length > 12 && <p className="text-muted-foreground">Showing first 12 of {inspection.length} rows.</p>}
+          </div>
+          {importProgress && <p className="text-sm">Progress: {importProgress}</p>}
+          <DialogFooter>
+            <Button variant="outline" disabled={transferBusy} onClick={() => setImportOpen(false)}>Cancel</Button>
+            <Button disabled={transferBusy || invalidRows.length > 0 || importRows.length === 0} onClick={() => void confirmImport()}>
+              {transferBusy ? "Importing…" : `Import ${importRows.length} rows`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="card-elevated p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative flex-1">
