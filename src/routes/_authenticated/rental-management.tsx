@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { Search } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
@@ -26,6 +27,7 @@ function RentalManagementPage() {
   const client = useQueryClient();
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerFilter, setCustomerFilter] = useState("all");
+  const [recordSearch, setRecordSearch] = useState("");
   const customers = useQuery({
     queryKey: ["admin-rental-customers"],
     queryFn: async () => {
@@ -182,6 +184,8 @@ function RentalManagementPage() {
       (m.status === "active" && m.expires_at && new Date(m.expires_at) <= new Date()),
   ).length;
   const customerQuery = customerSearch.trim().toLowerCase();
+  const recordQuery = recordSearch.trim().toLowerCase();
+  const matchesRecord = (...values: unknown[]) => !recordQuery || values.some((value) => String(value ?? "").toLowerCase().includes(recordQuery));
   const matchesCustomerSearch = (customer: any) =>
     !customerQuery ||
     `${customer.full_name ?? ""} ${customer.email ?? ""} ${customer.phone ?? ""}`
@@ -420,6 +424,18 @@ function RentalManagementPage() {
         </div>
       </section>
       <section className="mt-8">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={recordSearch} onChange={(event) => setRecordSearch(event.target.value)}
+              placeholder="Search rentals, payments or reservations by book, customer, status or reference"
+              aria-label="Search rental records" className="pl-9" />
+          </div>
+          <Button variant="outline" onClick={() => document.getElementById("rental-records")?.scrollIntoView({ behavior: "smooth" })}>
+            <Search className="size-4" /> Search
+          </Button>
+        </div>
+        <div id="rental-records" />
         <h2 className="font-display text-xl font-semibold">Payments</h2>
         <p className="text-sm text-muted-foreground">
           Manual receipts are recorded separately by payment type.
@@ -430,7 +446,7 @@ function RentalManagementPage() {
           ) : payments.error ? (
             <p className="text-sm text-destructive">Could not load payments.</p>
           ) : (
-            (payments.data ?? []).map((p: any) => (
+            (payments.data ?? []).filter((p: any) => matchesRecord(p.profile?.full_name,p.profile?.email,p.user_id,p.payment_type,p.status,p.amount,p.reference,p.id)).map((p: any) => (
               <article
                 key={p.id}
                 className="card-elevated flex flex-wrap items-center justify-between gap-3 p-3"
@@ -469,12 +485,12 @@ function RentalManagementPage() {
             <p>Loading reservations…</p>
           ) : reservations.error ? (
             <p className="text-sm text-destructive">Could not load reservations.</p>
-          ) : (reservations.data ?? []).filter((r: any) => r.status === "requested").length ===
+          ) : (reservations.data ?? []).filter((r: any) => r.status === "requested" && matchesRecord(r.books?.title,r.books?.author,r.profile?.full_name,r.profile?.email,r.user_id,r.id)).length ===
             0 ? (
             <p className="text-sm text-muted-foreground">No requested reservations.</p>
           ) : (
             (reservations.data ?? [])
-              .filter((r: any) => r.status === "requested")
+              .filter((r: any) => r.status === "requested" && matchesRecord(r.books?.title,r.books?.author,r.profile?.full_name,r.profile?.email,r.user_id,r.id))
               .map((r: any) => (
                 <article
                   key={r.id}
@@ -517,7 +533,7 @@ function RentalManagementPage() {
           ) : rentals.error ? (
             <p className="text-sm text-destructive">Could not load rentals.</p>
           ) : (
-            (rentals.data ?? []).map((r: any) => (
+            (rentals.data ?? []).filter((r: any) => matchesRecord(r.books?.title,r.books?.author,r.profile?.full_name,r.profile?.email,r.user_id,r.status,r.id)).map((r: any) => (
               <article
                 key={r.id}
                 className="card-elevated flex flex-wrap items-center justify-between gap-3 p-3"
