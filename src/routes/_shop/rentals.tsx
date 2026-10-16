@@ -353,7 +353,9 @@ function RentalsPage() {
               className="pl-9"
             />
           </div>
+          <Button variant="outline" onClick={() => document.getElementById("rental-catalog-results")?.scrollIntoView({ behavior: "smooth" })}><Search className="size-4" /> Search</Button>
         </div>
+        <div id="rental-catalog-results" />
         {books.isLoading ? (
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
