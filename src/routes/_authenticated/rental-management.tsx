@@ -461,6 +461,7 @@ function RentalManagementPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {p.payment_type === "rental" && p.status === "pending" && p.customer_payment_claimed_at && <Badge variant="outline">Customer says paid · verify</Badge>}
                   <Badge variant={p.status === "paid" ? "default" : "secondary"}>{p.status}</Badge>
                   {p.status === "pending" && (
                     <Button
