@@ -10,11 +10,11 @@ export const Route = createFileRoute("/_shop/rental-policy")({
 const sections = [
   [
     "1. Membership",
-    "A Single Package costs ₦3,000 per year for one reader. A Family Package costs ₦7,000 per year for parents and children in the same household. Membership lasts 12 months from activation. Membership is required to borrow. Membership fees are separate from rental fees and are not refundable when a member voluntarily leaves early. Membership may be renewed after expiry.",
+    "A Single Package costs ₦5,000 per year for one individual reader. A Family Package costs ₦10,000 per year for parents and children in the same household. Membership lasts 12 months from registration/payment activation. Membership is required to borrow, and membership fees are separate from book rental fees: membership does not include free rentals. Membership fees are not refundable when a member voluntarily leaves early. Membership may be renewed after expiry.",
   ],
   [
     "2. Refundable Security Deposit",
-    "Members pay a separate ₦5,000 refundable security deposit held during membership. It is not used for ordinary rental charges. Eligible lost, damaged, or other outstanding charges may be applied to it. If it is reduced, it may need to be restored to ₦5,000 before further borrowing. At closure, the remaining balance is refundable after obligations are settled. The deposit does not limit responsibility for a book or charge.",
+    "A Single Package requires a ₦10,000 refundable security deposit; a Family Package requires ₦20,000. This is held during membership and is separate from membership and normal rental fees. It is not used to pay normal rental charges. After all books are returned and all rental, late, damage and other outstanding charges are settled, the remaining deposit is refundable on closure. Lost or seriously damaged books may require a deduction. If charges exceed the deposit, the remaining amount must be paid before closure. A reduced deposit must be restored to the package requirement before further borrowing.",
   ],
   [
     "3. Book Rental Categories & Fees",
