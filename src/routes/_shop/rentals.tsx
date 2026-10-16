@@ -191,8 +191,8 @@ function RentalsPage() {
       <section className="mt-6 grid gap-4 md:grid-cols-2">
         {(
           [
-            ["single", "Single Package", 3000, "One individual reader"],
-            ["family", "Family Package", 7000, "Parents and children in one household"],
+            ["single", "Single Package", 5000, "One individual reader"],
+            ["family", "Family Package", 10000, "Parents and children in one household"],
           ] as const
         ).map(([type, title, fee, detail]) => (
           <article key={type} className="card-elevated flex flex-col p-5">
@@ -203,7 +203,7 @@ function RentalsPage() {
               <span className="text-sm font-normal text-muted-foreground"> / year</span>
             </p>
             <p className="mt-2 text-sm">
-              Plus a separate refundable <strong>₦5,000 security deposit</strong>.
+              Plus a separate refundable <strong>{money(type === "single" ? 10000 : 20000)} security deposit</strong>.
             </p>
             {m ? (
               <>
@@ -320,10 +320,10 @@ function RentalsPage() {
                   {membershipRequestType === "single" ? "Single Package" : "Family Package"}
                 </p>
                 <p className="text-lg font-semibold">
-                  {money(membershipRequestType === "single" ? 3000 : 7000)} / year
+                  {money(membershipRequestType === "single" ? 5000 : 10000)} / year
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Plus a separate refundable {money(5000)} security deposit.
+                  Plus a separate refundable {money(membershipRequestType === "single" ? 10000 : 20000)} security deposit.
                 </p>
               </div>
               <Button asChild className="w-full">
