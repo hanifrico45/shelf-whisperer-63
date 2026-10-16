@@ -311,54 +311,20 @@ export function BookDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="rental_category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rental category</FormLabel>
-                    <Select
-                      value={field.value ?? "auto"}
-                      onValueChange={(v) => field.onChange(v === "auto" ? null : v)}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="auto">Automatic from selling value</SelectItem>
-                        <SelectItem value="A">A · ₦1,200 default</SelectItem>
-                        <SelectItem value="B">B · ₦800 default</SelectItem>
-                        <SelectItem value="C">C · ₦500 default</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="rental_fee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rental fee override (optional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        step="1"
-                        placeholder="Automatic by category"
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(e.target.value === "" ? null : Number(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {form.watch("rentable") && (() => {
+                const price = Number(form.watch("selling_price"));
+                const tier = price >= 10000 && price <= 12000 ? ["A", 1200]
+                  : price >= 6000 && price < 10000 ? ["B", 800]
+                  : price >= 3000 && price < 6000 ? ["C", 500] : null;
+                return (
+                  <div className="rounded-lg border bg-muted/40 p-3 text-sm sm:col-span-2">
+                    {tier
+                      ? <p>Automatic rental price: <strong>Category {tier[0]} · ₦{Number(tier[1]).toLocaleString("en-NG")} per rental</strong></p>
+                      : <p className="text-destructive">This book must have a selling price between ₦3,000 and ₦12,000 to be rentable.</p>}
+                    <p className="mt-1 text-xs text-muted-foreground">The rental category and fee are calculated automatically from the selling price when you save.</p>
+                  </div>
+                );
+              })()}
               <FormField
                 control={form.control}
                 name="one_at_a_time"
