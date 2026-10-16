@@ -86,7 +86,7 @@ const statusVariant: Record<string, "default" | "secondary" | "outline" | "destr
 
 function BooksPage() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("search") ?? "");
   const [debounced, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState("all");
   const [status, setStatus] = useState("all");
