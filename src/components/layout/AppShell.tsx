@@ -12,8 +12,9 @@ import {
   ReceiptText,
   Store,
   BookCopy,
+  Search,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import {
   Sidebar,
@@ -30,6 +31,7 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { logAuthEvent } from "@/lib/auth";
 
@@ -113,6 +115,8 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { theme, toggleTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [siteSearch, setSiteSearch] = useState("");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -139,6 +143,9 @@ export function AppShell({
             </div>
             <div className="flex items-center gap-2">
               {actions}
+              <Button variant="ghost" size="icon" onClick={() => setSearchOpen((open) => !open)} aria-label="Search inventory">
+                <Search className="size-4" />
+              </Button>
               <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
                 {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
               </Button>
@@ -147,6 +154,16 @@ export function AppShell({
               </Button>
             </div>
           </header>
+          {searchOpen && (
+            <form role="search" className="flex gap-2 border-b border-border bg-background px-4 py-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                window.location.assign("/books?search=" + encodeURIComponent(siteSearch.trim()));
+              }}>
+              <Input autoFocus aria-label="Search inventory books" placeholder="Search inventory by title, author or ISBN" value={siteSearch} onChange={(event) => setSiteSearch(event.target.value)} />
+              <Button type="submit"><Search className="size-4" /> Search</Button>
+            </form>
+          )}
           <main className="flex-1 p-4 md:p-6">{children}</main>
         </div>
       </div>
