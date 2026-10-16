@@ -18,7 +18,7 @@ const sections = [
   ],
   [
     "3. Book Rental Categories & Fees",
-    "Category A: selling value ₦10,000–₦12,000, rental fee ₦1,200. Category B: ₦6,000–₦9,999, rental fee ₦800. Category C: ₦3,000–₦5,999, rental fee ₦500. The applicable rental fee is paid each time a book is borrowed. Rental fees are separate from the selling price. Store staff may set an override where needed.",
+    "Category A: selling value ₦10,000–₦12,000, rental fee ₦1,200. Category B: ₦6,000–₦9,999, rental fee ₦800. Category C: ₦3,000–₦5,999, rental fee ₦500. The applicable rental fee is paid each time a book is borrowed. Rental fees are separate from the selling price. Rental categories and fees are determined by the book's current selling value.",
   ],
   [
     "4. Borrowing Rules",
