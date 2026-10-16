@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Loader2 } from "lucide-react";
+import { CalendarDays, Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,8 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
   const [membershipOpen, setMembershipOpen] = useState(false);
   const [rentalOpen, setRentalOpen] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "card">("transfer");
+  const [createdRentalId, setCreatedRentalId] = useState<string | null>(null);
   const [membershipType, setMembershipType] = useState<"single" | "family">("single");
   const [membershipRequestType, setMembershipRequestType] = useState<"single" | "family" | null>(
     null,
@@ -133,10 +135,9 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
       if (error) throw error;
       return data;
     },
-    onSuccess: async () => {
-      toast.success("Rental request submitted. The store will confirm payment and pickup.");
-      setRentalOpen(false);
-      setReviewing(false);
+    onSuccess: async (rentalId: string) => {
+      setCreatedRentalId(rentalId);
+      toast.success("Rental saved. Payment is awaiting store verification.");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["rental-catalog"] }),
         queryClient.invalidateQueries({ queryKey: ["my-rentals"] }),
@@ -144,6 +145,26 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
       ]);
     },
     onError: (error: Error) => toast.error(error.message || "Could not request this rental"),
+  });
+
+  const contactUrl = createdRentalId
+    ? "https://wa.me/2348184556437?text=" + encodeURIComponent(
+        `Hello Mindthrills Resources, I requested to rent "${book.title}" (rental ID: ${createdRentalId}). Rental fee: ${money(Number(rentalBook?.rental_fee ?? book.rental_fee))}. Payment method: ${paymentMethod}. I selected ${fulfillmentMethod === "pickup" ? "bookstore pickup" : "delivery to " + location.trim()} on ${pickupDate}. I have indicated payment on the website; please verify the payment and confirm my pending rental.`
+      )
+    : "";
+  const paymentClaim = useMutation({
+    mutationFn: async () => {
+      if (!createdRentalId) throw new Error("Create the rental request first.");
+      const { error } = await db.rpc("customer_confirm_rental_payment_intent", {
+        _rental_id: createdRentalId, _method: paymentMethod, _claims_paid: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Payment confirmation sent for verification. Continue on WhatsApp.");
+      window.open(contactUrl, "_blank", "noopener,noreferrer");
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   if (userQuery.isLoading || (userId && memberQuery.isLoading) || availabilityQuery.isLoading) {
@@ -214,6 +235,7 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
               return;
             }
             setReviewing(false);
+            setCreatedRentalId(null);
             setRentalOpen(true);
           }}
         >
@@ -321,27 +343,42 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
         open={rentalOpen}
         onOpenChange={(open) => {
           setRentalOpen(open);
-          if (!open) setReviewing(false);
+          if (!open) { setReviewing(false); setCreatedRentalId(null); }
         }}
       >
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{reviewing ? "Review your rental" : "Rent this book"}</DialogTitle>
+            <DialogTitle>{createdRentalId ? "Rental payment pending" : reviewing ? "Review and pay for your rental" : "Rent this book"}</DialogTitle>
             <DialogDescription>
-              {reviewing
-                ? "Check the book, fee, requested date, and location before submitting."
-                : "Choose a preferred date and how you would like to receive the book."}
+              {createdRentalId
+                ? "Your rental request is saved. Tell us when you have paid, then contact the store on WhatsApp for verification."
+                : reviewing
+                  ? "Confirm the rental fee, payment method and delivery or pickup details."
+                  : "Choose a date and delivery or pickup, then select how you will arrange payment."}
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border p-4">
             <p className="font-medium">{book.title}</p>
             <p className="text-sm text-muted-foreground">{book.author}</p>
             <p className="mt-2 text-sm font-semibold">
-              Rental fee: {money(Number(book.rental_fee))} · Category {book.rental_category}
+              Rental fee: {money(Number(rentalBook?.rental_fee ?? book.rental_fee))} · Category {rentalBook?.rental_category ?? book.rental_category}
             </p>
             <p className="text-xs text-muted-foreground">Standard rental period: 14 days</p>
           </div>
-          {!reviewing ? (
+          {createdRentalId ? (
+            <div className="space-y-4 rounded-lg border p-4 text-sm">
+              <p className="font-medium">Rental #{createdRentalId.slice(0, 8)} · {money(Number(rentalBook?.rental_fee ?? book.rental_fee))}</p>
+              <p>Payment method: {paymentMethod === "transfer" ? "Bank transfer" : "Card (arranged with store)"}</p>
+              <p className="text-muted-foreground">Your rental and payment remain pending until staff confirms payment. Card payments are arranged with the store; the website does not collect card details.</p>
+              <Button className="w-full" disabled={paymentClaim.isPending} onClick={() => paymentClaim.mutate()}>
+                {paymentClaim.isPending && <Loader2 className="size-4 animate-spin" />}
+                I have paid — Contact WhatsApp
+              </Button>
+              <Button variant="outline" className="w-full" asChild>
+                <a href={contactUrl} target="_blank" rel="noopener noreferrer"><MessageCircle className="size-4" /> Contact WhatsApp to check pending rent</a>
+              </Button>
+            </div>
+          ) : !reviewing ? (
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor={`rental-date-${book.id}`}>Preferred pickup / delivery date</Label>
@@ -386,7 +423,20 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
               </div>
             </div>
           ) : (
-            <div className="space-y-2 text-sm">
+            <div className="space-y-3 text-sm">
+              <div className="space-y-2">
+                <Label htmlFor={`rental-payment-${book.id}`}>Pay rental fee by</Label>
+                <select
+                  id={`rental-payment-${book.id}`}
+                  value={paymentMethod}
+                  onChange={(event) => setPaymentMethod(event.target.value as "transfer" | "card")}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="transfer">Bank transfer</option>
+                  <option value="card">Card — arrange payment with store</option>
+                </select>
+                <p className="text-xs text-muted-foreground">Payment is arranged directly with the bookstore; this website does not process cards. Staff verifies your payment before checkout.</p>
+              </div>
               <p>
                 <span className="text-muted-foreground">Preferred date:</span>{" "}
                 {new Date(`${pickupDate}T12:00:00`).toLocaleDateString()}
@@ -402,7 +452,7 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
               )}
             </div>
           )}
-          <DialogFooter>
+          {!createdRentalId && <DialogFooter>
             {reviewing ? (
               <>
                 <Button variant="outline" onClick={() => setReviewing(false)}>
@@ -410,7 +460,7 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
                 </Button>
                 <Button disabled={rentalMutation.isPending} onClick={() => rentalMutation.mutate()}>
                   {rentalMutation.isPending && <Loader2 className="size-4 animate-spin" />}
-                  Confirm rental request
+                  Confirm rental and continue to payment
                 </Button>
               </>
             ) : (
@@ -423,7 +473,7 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
                 Review rental
               </Button>
             )}
-          </DialogFooter>
+          </DialogFooter>}
         </DialogContent>
       </Dialog>
     </>
