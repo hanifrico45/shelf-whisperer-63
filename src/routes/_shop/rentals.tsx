@@ -121,7 +121,7 @@ function RentalsPage() {
     queryFn: async () => {
       const { data, error } = await db
         .from("rentals")
-        .select("*,books(title,author,cover_url),rental_payments!rental_payments_rental_fk(id,payment_type,amount,status)")
+        .select("*,books(title,author,cover_url),rental_payments!rental_payments_rental_fk(id,payment_type,amount,status,customer_payment_claimed_at,method)")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -474,6 +474,16 @@ function RentalsPage() {
                         Outstanding late fee: {money(Number(r.late_fee_paid ? 0 : r.late_fee))} ·
                         Other balance: {money(Number(r.balance_owed))}
                       </p>
+                      {r.status === "requested" && (
+                        <div className="mt-2 space-y-1 text-xs">
+                          <p>Rental payment: {r.rental_payments?.find((p: any) => p.payment_type === "rental")?.status === "paid"
+                            ? "Confirmed" : r.rental_payments?.find((p: any) => p.payment_type === "rental")?.customer_payment_claimed_at
+                            ? "Customer reported payment — awaiting staff verification" : "Pending payment"}</p>
+                          <a className="font-medium text-primary underline" href={"https://wa.me/2348184556437?text=" + encodeURIComponent(
+                            `Hello Mindthrills Resources, please help me with my pending rental of "${r.books?.title}" (ID: ${r.id}). Rental fee: ${money(Number(r.rental_fee))}. Please confirm payment and ${r.fulfillment_method === "delivery" ? "delivery" : "pickup"}.`
+                          )} target="_blank" rel="noopener noreferrer">Contact WhatsApp about this rental</a>
+                        </div>
+                      )}
                       {report && (
                         <p className="mt-1 text-xs text-muted-foreground">
                           Your condition report ({report.condition}): {report.notes}
