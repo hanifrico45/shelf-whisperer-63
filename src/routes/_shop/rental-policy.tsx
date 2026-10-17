@@ -22,19 +22,19 @@ const sections = [
   ],
   [
     "4. Borrowing Rules",
-    "A member may borrow up to two books at a time. Some books may be restricted to one-at-a-time. The standard rental period is 14 days. A rental may be renewed once for seven additional days by request before its due date, if another member has not requested the book. The renewal fee is the applicable rental fee. Renewal is not automatic. Borrowing requires an active membership, valid deposit, available book, and no unresolved overdue rental.",
+    "Single members may borrow a maximum of one book at a time. Family members may borrow up to three books at a time, one from each rental category A, B and C. At the package limit, members must return books before borrowing additional titles. High-demand and high-value books may be limited to one copy at a time. The standard borrowing period is 14 days. A book can be renewed once for an additional 7 days if requested before the due date, no other member has reserved it, and the applicable rental fee is paid. Renewal is never automatic. Books must be returned on or before the due date, in their general original condition, with all pages, covers and accompanying materials intact. An active membership and full security deposit are required.",
   ],
   [
     "5. Late Returns",
-    "The late fee is ₦100 per book per day, capped at ₦500 per book. Late fees are separate from rental and renewal fees and must be settled before borrowing again. Return the overdue book and settle the fee before making another rental. Repeated late returns may result in temporary suspension.",
+    "Late returns without an approved renewal incur ₦100 per book per day, capped at ₦500 per book. Late fees are separate from rental and renewal fees. Renewal must be requested before the original due date and cannot be approved when another member has reserved that book. Members cannot borrow again while a book is overdue or while applicable late fees are unpaid. Repeated late returns may result in temporary suspension.",
   ],
   [
     "6. Book Condition",
-    "The store records a book's issue and return condition. Members should report existing damage before or immediately after receiving a book. Examples include missing pages or cover, badly torn pages, significant writing or colouring, liquid damage, severe stains, or damage that makes a book unsuitable for further rental. Normal signs of careful reading are not automatically damage.",
+    "The store checks and records a book's general condition before issuing it. Members must report any existing damage BEFORE taking possession so it is not incorrectly attributed to them. Normal careful-reading wear is acceptable. Damage may include missing pages, badly torn pages, a missing cover, substantial writing, colouring or highlighting, liquid damage, severe stains, or damage making the book unsuitable for further rental.",
   ],
   [
     "7. Lost or Damaged Books",
-    "A member is responsible for the current replacement cost of a lost book or one damaged beyond reasonable repair. If the same title is available for purchase, its current selling price is the normal replacement basis. If it is unavailable, the store determines a reasonable amount based on recorded value and suitable replacements. The deposit may be applied to the charge; any remaining amount is still owed.",
+    "Members are responsible for the current replacement cost of a lost book or one damaged beyond reasonable repair. The current selling price is normally used when the exact title is available. If unavailable, the store determines a reasonable amount based on recorded value and the availability of a suitable replacement. Security deposits of ₦10,000 (Single) or ₦20,000 (Family) may cover some or all loss/damage charges. For example, a ₦13,000 replacement against a ₦10,000 Single deposit leaves ₦3,000 to pay. If the amount owed is less than the deposit, only the required amount is deducted and the remaining deposit stays refundable, subject to clearance.",
   ],
   [
     "8. Membership Cancellation / Leaving the Service",
