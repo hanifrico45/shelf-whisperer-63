@@ -88,13 +88,13 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
     queryKey: ["my-active-rental-count", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { count, error } = await db
+      const { data, error } = await db
         .from("rentals")
-        .select("id", { count: "exact", head: true })
+        .select("id,book_id,books(rental_category)")
         .eq("user_id", userId)
         .in("status", ["requested", "active"]);
       if (error) throw error;
-      return count ?? 0;
+      return data ?? [];
     },
   });
 
@@ -228,10 +228,14 @@ export function BookRentalAction({ book }: { book: ShopBook }) {
               );
               return;
             }
-            if ((activeRentalsQuery.data ?? 0) >= 2) {
-              toast.error(
-                "You already have 2 active rentals. Return a book before renting another.",
-              );
+            const openRentals = activeRentalsQuery.data ?? [];
+            const maxBooks = member?.membership_type === "family" ? 3 : 1;
+            if (openRentals.length >= maxBooks) {
+              toast.error(`Your ${member?.membership_type === "family" ? "Family" : "Single"} package allows ${maxBooks} book(s) at a time. Return a book first.`);
+              return;
+            }
+            if (member?.membership_type === "family" && openRentals.some((r: any) => r.books?.rental_category === (rentalBook?.rental_category ?? book.rental_category))) {
+              toast.error("Family members may borrow one book from each rental category A, B, and C at a time.");
               return;
             }
             setReviewing(false);
