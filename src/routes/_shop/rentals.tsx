@@ -178,7 +178,7 @@ function RentalsPage() {
         <div className="mt-5 flex flex-wrap gap-2 text-xs">
           <Badge variant="secondary">14 days</Badge>
           <Badge variant="secondary">One 7-day renewal</Badge>
-          <Badge variant="secondary">2 books at a time</Badge>
+          <Badge variant="secondary">Single: 1 book · Family: up to 3 (A, B, C)</Badge>
           <Badge variant="secondary">₦100/day late fee · max ₦500</Badge>
         </div>
       </section>
